@@ -1,6 +1,6 @@
-_BASE_: "../Base-RCNN-FPN.yaml"
+_BASE_: "../Base-RCNN-C4.yaml"
 MODEL:
-  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  WEIGHTS: "/home/joseph/workspace/OWOD/output/baseline_pascal/model_final.pth"
   MASK_ON: False
   RESNETS:
     DEPTH: 50
@@ -16,4 +16,4 @@ SOLVER:
   STEPS: (12000, 16000)
   MAX_ITER: 18000  # 17.4 epochs
   WARMUP_ITERS: 100
-OUTPUT_DIR: "./output/baseline_pascal_fpn"
+OUTPUT_DIR: "./output/baseline_pascal"

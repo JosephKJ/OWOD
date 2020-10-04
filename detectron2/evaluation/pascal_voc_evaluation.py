@@ -87,6 +87,9 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
             res_file_template = os.path.join(dirname, "{}.txt")
 
             aps = defaultdict(list)  # iou -> ap per class
+            # recs = defaultdict(list)
+            # precs = defaultdict(list)
+
             for cls_id, cls_name in enumerate(self._class_names):
                 lines = predictions.get(cls_id, [""])
 
@@ -103,10 +106,27 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
                         use_07_metric=self._is_2007,
                     )
                     aps[thresh].append(ap * 100)
+                    # recs[thresh].append(rec * 100)
+                    # precs[thresh].append(prec * 100)
 
         ret = OrderedDict()
         mAP = {iou: np.mean(x) for iou, x in aps.items()}
         ret["bbox"] = {"AP": np.mean(list(mAP.values())), "AP50": mAP[50], "AP75": mAP[75]}
+
+        # Extra logging of class-wise APs
+        self._logger.info(self._class_names)
+        self._logger.info("AP__: " + str(['%.1f' % x for x in list(np.mean([x for _, x in aps.items()], axis=0))]))
+        self._logger.info("AP50: " + str(['%.1f' % x for x in aps[50]]))
+        self._logger.info("AP75: " + str(['%.1f' % x for x in aps[75]]))
+
+        # self._logger.info("R__: " + str(['%.1f' % x for x in list(np.mean([x for _, x in recs.items()], axis=0))]))
+        # self._logger.info("R50: " + str(['%.1f' % x for x in recs[50]]))
+        # self._logger.info("R75: " + str(['%.1f' % x for x in recs[75]]))
+        #
+        # self._logger.info("P__: " + str(['%.1f' % x for x in list(np.mean([x for _, x in precs.items()], axis=0))]))
+        # self._logger.info("P50: " + str(['%.1f' % x for x in precs[50]]))
+        # self._logger.info("P75: " + str(['%.1f' % x for x in precs[75]]))
+
         return ret
 
 

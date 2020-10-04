@@ -55,3 +55,9 @@ If you use Detectron2 in your research or wish to refer to the baseline results 
   year =         {2019}
 }
 ```
+
+## Command
+
+```python
+python tools/train_net.py --num-gpus 4 --config-file ./configs/PascalVOC-Detection/faster_rcnn_R_50_C4.yamlSOLVER.IMS_PER_BATCH 4 SOLVER.BASE_LR 0.005
+```

@@ -596,6 +596,15 @@ _C.TEST.PRECISE_BN = CN({"ENABLED": False})
 _C.TEST.PRECISE_BN.NUM_ITER = 200
 
 # ---------------------------------------------------------------------------- #
+# OpenWorld Object Detection
+# ---------------------------------------------------------------------------- #
+_C.OWOD = CN()
+_C.OWOD.ENABLE_THRESHOLD_AUTOLABEL_UNK = False
+_C.OWOD.NUM_UNK_PER_IMAGE = 1
+_C.OWOD.ENABLE_UNCERTAINITY_AUTOLABEL_UNK = False
+_C.OWOD.ENABLE_CLUSTERING = False
+
+# ---------------------------------------------------------------------------- #
 # Misc options
 # ---------------------------------------------------------------------------- #
 # Directory where output files are written

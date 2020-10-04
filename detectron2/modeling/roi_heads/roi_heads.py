@@ -2,6 +2,8 @@
 import inspect
 import logging
 import numpy as np
+import heapq
+import operator
 from typing import Dict, List, Optional, Tuple, Union
 import torch
 from torch import nn
@@ -143,7 +145,9 @@ class ROIHeads(torch.nn.Module):
         batch_size_per_image,
         positive_fraction,
         proposal_matcher,
-        proposal_append_gt=True
+        enable_thresold_autolabelling,
+        unk_k,
+        proposal_append_gt=True,
     ):
         """
         NOTE: this interface is experimental.
@@ -162,6 +166,8 @@ class ROIHeads(torch.nn.Module):
         self.num_classes = num_classes
         self.proposal_matcher = proposal_matcher
         self.proposal_append_gt = proposal_append_gt
+        self.enable_thresold_autolabelling = enable_thresold_autolabelling
+        self.unk_k = unk_k
 
     @classmethod
     def from_config(cls, cfg):
@@ -176,10 +182,13 @@ class ROIHeads(torch.nn.Module):
                 cfg.MODEL.ROI_HEADS.IOU_LABELS,
                 allow_low_quality_matches=False,
             ),
+            "enable_thresold_autolabelling": cfg.OWOD.ENABLE_THRESHOLD_AUTOLABEL_UNK,
+            "unk_k": cfg.OWOD.NUM_UNK_PER_IMAGE,
         }
 
     def _sample_proposals(
-        self, matched_idxs: torch.Tensor, matched_labels: torch.Tensor, gt_classes: torch.Tensor
+        self, matched_idxs: torch.Tensor, matched_labels: torch.Tensor, gt_classes: torch.Tensor,
+            objectness_logits: torch.Tensor = None,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Based on the matching between N proposals and M groundtruth,
@@ -214,7 +223,22 @@ class ROIHeads(torch.nn.Module):
         )
 
         sampled_idxs = torch.cat([sampled_fg_idxs, sampled_bg_idxs], dim=0)
-        return sampled_idxs, gt_classes[sampled_idxs]
+        gt_classes_ss = gt_classes[sampled_idxs]
+
+        if self.enable_thresold_autolabelling:
+            matched_labels_ss = matched_labels[sampled_idxs]
+            pred_objectness_score_ss = objectness_logits[sampled_idxs]
+
+            # 1) Remove FG objectness score. 2) Sort and select top k. 3) Build and apply mask.
+            mask = torch.zeros((pred_objectness_score_ss.shape), dtype=torch.bool)
+            pred_objectness_score_ss[matched_labels_ss != 0] = -1
+            sorted_indices = list(zip(
+                *heapq.nlargest(self.unk_k, enumerate(pred_objectness_score_ss), key=operator.itemgetter(1))))[0]
+            for index in sorted_indices:
+                mask[index] = True
+            gt_classes_ss[mask] = self.num_classes - 1
+
+        return sampled_idxs, gt_classes_ss
 
     @torch.no_grad()
     def label_and_sample_proposals(
@@ -269,7 +293,7 @@ class ROIHeads(torch.nn.Module):
             )
             matched_idxs, matched_labels = self.proposal_matcher(match_quality_matrix)
             sampled_idxs, gt_classes = self._sample_proposals(
-                matched_idxs, matched_labels, targets_per_image.gt_classes
+                matched_idxs, matched_labels, targets_per_image.gt_classes, proposals_per_image.objectness_logits
             )
 
             # Set target attributes of the sampled proposals:

@@ -17,7 +17,7 @@ __all__ = ["load_voc_instances", "register_pascal_voc"]
 CLASS_NAMES = (
     "aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat",
     "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person",
-    "pottedplant", "sheep", "sofa", "train", "tvmonitor"
+    "pottedplant", "sheep", "sofa", "train", "tvmonitor", "unknown"
 )
 # fmt: on
 
