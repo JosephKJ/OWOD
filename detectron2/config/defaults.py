@@ -604,6 +604,12 @@ _C.OWOD.NUM_UNK_PER_IMAGE = 1
 _C.OWOD.ENABLE_UNCERTAINITY_AUTOLABEL_UNK = False
 _C.OWOD.ENABLE_CLUSTERING = False
 
+_C.OWOD.CLUSTERING = CN()
+_C.OWOD.CLUSTERING.ITEMS_PER_CLASS = 10
+_C.OWOD.CLUSTERING.START_ITER = 100
+_C.OWOD.CLUSTERING.UPDATE_MU_ITER = 200
+_C.OWOD.CLUSTERING.MOMENTUM = 0.9
+
 # ---------------------------------------------------------------------------- #
 # Misc options
 # ---------------------------------------------------------------------------- #

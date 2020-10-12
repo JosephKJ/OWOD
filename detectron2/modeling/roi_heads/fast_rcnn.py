@@ -2,15 +2,18 @@
 import logging
 from typing import Dict, Union
 import torch
+import math
 from fvcore.nn import giou_loss, smooth_l1_loss
 from torch import nn
 from torch.nn import functional as F
+from torch.distributions.normal import Normal
 
 from detectron2.config import configurable
 from detectron2.layers import Linear, ShapeSpec, batched_nms, cat, nonzero_tuple
 from detectron2.modeling.box_regression import Box2BoxTransform
 from detectron2.structures import Boxes, Instances
 from detectron2.utils.events import get_event_storage
+from detectron2.utils.store import Store
 
 __all__ = ["fast_rcnn_inference", "FastRCNNOutputLayers"]
 
@@ -360,6 +363,10 @@ class FastRCNNOutputLayers(nn.Module):
         input_shape: ShapeSpec,
         *,
         box2box_transform,
+        clustering_items_per_class,
+        clustering_start_iter,
+        clustering_update_mu_iter,
+        clustering_momentum,
         num_classes: int,
         test_score_thresh: float = 0.0,
         test_nms_thresh: float = 0.5,
@@ -410,8 +417,16 @@ class FastRCNNOutputLayers(nn.Module):
         self.test_topk_per_image = test_topk_per_image
         self.box_reg_loss_type = box_reg_loss_type
         if isinstance(loss_weight, float):
-            loss_weight = {"loss_cls": loss_weight, "loss_box_reg": loss_weight}
+            loss_weight = {"loss_cls": loss_weight, "loss_box_reg": loss_weight, "loss_clustering": 0.00001}
         self.loss_weight = loss_weight
+
+        self.num_classes = num_classes
+        self.clustering_start_iter = clustering_start_iter
+        self.clustering_update_mu_iter = clustering_update_mu_iter
+        self.clustering_momentum = clustering_momentum
+
+        self.feature_store = Store(num_classes + 1, clustering_items_per_class)
+        self.means = [None for _ in range(num_classes + 1)]
 
     @classmethod
     def from_config(cls, cfg, input_shape):
@@ -426,7 +441,11 @@ class FastRCNNOutputLayers(nn.Module):
             "test_nms_thresh"       : cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST,
             "test_topk_per_image"   : cfg.TEST.DETECTIONS_PER_IMAGE,
             "box_reg_loss_type"     : cfg.MODEL.ROI_BOX_HEAD.BBOX_REG_LOSS_TYPE,
-            "loss_weight"           : {"loss_box_reg": cfg.MODEL.ROI_BOX_HEAD.BBOX_REG_LOSS_WEIGHT},
+            "loss_weight"           : {"loss_box_reg": cfg.MODEL.ROI_BOX_HEAD.BBOX_REG_LOSS_WEIGHT, "loss_clustering": 0.00001},
+            "clustering_items_per_class" : cfg.OWOD.CLUSTERING.ITEMS_PER_CLASS,
+            "clustering_start_iter" : cfg.OWOD.CLUSTERING.START_ITER,
+            "clustering_update_mu_iter" : cfg.OWOD.CLUSTERING.UPDATE_MU_ITER,
+            "clustering_momentum"   : cfg.OWOD.CLUSTERING.MOMENTUM,
             # fmt: on
         }
 
@@ -449,8 +468,80 @@ class FastRCNNOutputLayers(nn.Module):
         proposal_deltas = self.bbox_pred(x)
         return scores, proposal_deltas
 
+    def update_feature_store(self, features, proposals):
+        # cat(..., dim=0) concatenates over all images in the batch
+        gt_classes = torch.cat([p.gt_classes for p in proposals])
+        self.feature_store.add(features, gt_classes)
+
+    def clstr_loss(self, input_features, proposals):
+        """
+        Get the foreground input_features, generate distributions for the class,
+        get probability of each feature from each distribution;
+        Compute loss: if belonging to a class -> likelihood should be higher
+                      else -> lower
+        :param input_features:
+        :param proposals:
+        :return:
+        """
+        loss = 0
+        gt_classes = torch.cat([p.gt_classes for p in proposals])
+        mask = gt_classes != self.num_classes
+        fg_features = input_features[mask]
+        classes = gt_classes[mask]
+
+        # Distribution per class
+        log_prob = [None for _ in range(self.num_classes + 1)]
+        for cls_index, mu in enumerate(self.means):
+            if mu is not None:
+                # dist = Normal(loc=mu.cuda(), scale=torch.ones_like(mu.cuda()))
+                # log_prob[cls_index] = dist.log_prob(fg_features).mean(dim=1)
+                log_prob[cls_index] = torch.distributions.multivariate_normal.\
+                    MultivariateNormal(mu[:128], torch.eye(len(mu[:128]))).log_prob(fg_features[:,:128].cpu())
+                #                     MultivariateNormal(mu[:2], torch.eye(len(mu[:2]))).log_prob(fg_features[:,:2].cpu())
+            else:
+                log_prob[cls_index] = torch.zeros((len(fg_features)))
+
+        log_prob = torch.stack(log_prob).T # num_of_fg_proposals x num_of_classes
+        for i, p in enumerate(log_prob):
+            weight = torch.ones_like(p) * -1
+            weight[classes[i]] = 1
+            p = p * weight
+            loss += p.mean()
+        return loss
+
+    def get_clustering_loss(self, input_features, proposals):
+        storage = get_event_storage()
+        c_loss = 0
+        if storage.iter == self.clustering_start_iter :
+            items = self.feature_store.retrieve(-1)
+            for index, item in enumerate(items):
+                if len(item) == 0:
+                    self.means[index] = None
+                else:
+                    mu = torch.tensor(item).mean(dim=0)
+                    self.means[index] = mu
+            c_loss = self.clstr_loss(input_features, proposals)
+        elif storage.iter > self.clustering_start_iter:
+            if storage.iter % self.clustering_update_mu_iter == 0:
+                # Compute new MUs
+                items = self.feature_store.retrieve(-1)
+                new_means = [None for _ in range(self.num_classes + 1)]
+                for index, item in enumerate(items):
+                    if len(item) == 0:
+                        new_means[index] = None
+                    else:
+                        new_means[index] = torch.tensor(item).mean(dim=0)
+                # Update the MUs
+                for i, mean in enumerate(self.means):
+                    if(mean) is not None:
+                        self.means[i] = self.clustering_momentum * mean + \
+                                        (1 - self.clustering_momentum) * new_means[i]
+
+            c_loss = self.clstr_loss(input_features, proposals)
+        return c_loss
+
     # TODO: move the implementation to this class.
-    def losses(self, predictions, proposals):
+    def losses(self, predictions, proposals, input_features=None):
         """
         Args:
             predictions: return values of :meth:`forward()`.
@@ -470,6 +561,8 @@ class FastRCNNOutputLayers(nn.Module):
             self.smooth_l1_beta,
             self.box_reg_loss_type,
         ).losses()
+        if input_features is not None:
+            losses["loss_clustering"] = self.get_clustering_loss(input_features, proposals)
         return {k: v * self.loss_weight.get(k, 1.0) for k, v in losses.items()}
 
     def inference(self, predictions, proposals):

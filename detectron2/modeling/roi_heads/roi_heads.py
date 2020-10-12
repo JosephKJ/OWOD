@@ -450,11 +450,13 @@ class Res5ROIHeads(ROIHeads):
         box_features = self._shared_roi_transform(
             [features[f] for f in self.in_features], proposal_boxes
         )
-        predictions = self.box_predictor(box_features.mean(dim=[2, 3]))
+        input_features = box_features.mean(dim=[2, 3])
+        predictions = self.box_predictor(input_features)
 
         if self.training:
+            self.box_predictor.update_feature_store(input_features, proposals)
             del features
-            losses = self.box_predictor.losses(predictions, proposals)
+            losses = self.box_predictor.losses(predictions, proposals, input_features)
             if self.mask_on:
                 proposals, fg_selection_masks = select_foreground_proposals(
                     proposals, self.num_classes
