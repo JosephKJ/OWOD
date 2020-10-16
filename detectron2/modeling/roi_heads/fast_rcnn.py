@@ -348,6 +348,33 @@ class FastRCNNOutputs:
             boxes, scores, image_shapes, score_thresh, nms_thresh, topk_per_image
         )
 
+class AE(nn.Module):
+    def __init__(self, input_size, z_dim):
+        super(AE,self).__init__()
+        self.e1 = nn.Linear(input_size,z_dim)
+        self.d1 = nn.Linear(z_dim, input_size)
+
+    def encoder(self, x):
+        z = self.e1(x)
+        z = torch.relu(z)
+        return z
+
+    def decoder(self, z):
+        x = self.d1(z)
+        x = torch.relu(x)
+        return x
+
+    def forward(self, x):
+        z = self.encoder(x)
+        return self.decoder(z)
+
+def Xavier(m):
+    if m.__class__.__name__ == 'Linear':
+        fan_in, fan_out = m.weight.data.size(1), m.weight.data.size(0)
+        std = 1.0 * math.sqrt(2.0 / (fan_in + fan_out))
+        a = math.sqrt(3.0) * std
+        m.weight.data.uniform_(-a, a)
+        m.bias.data.fill_(0.0)
 
 class FastRCNNOutputLayers(nn.Module):
     """
@@ -367,6 +394,8 @@ class FastRCNNOutputLayers(nn.Module):
         clustering_start_iter,
         clustering_update_mu_iter,
         clustering_momentum,
+        clustering_z_dimension,
+        enable_clustering,
         num_classes: int,
         test_score_thresh: float = 0.0,
         test_nms_thresh: float = 0.5,
@@ -417,7 +446,7 @@ class FastRCNNOutputLayers(nn.Module):
         self.test_topk_per_image = test_topk_per_image
         self.box_reg_loss_type = box_reg_loss_type
         if isinstance(loss_weight, float):
-            loss_weight = {"loss_cls": loss_weight, "loss_box_reg": loss_weight, "loss_clustering": 0.00001}
+            loss_weight = {"loss_cls": loss_weight, "loss_box_reg": loss_weight}
         self.loss_weight = loss_weight
 
         self.num_classes = num_classes
@@ -427,6 +456,12 @@ class FastRCNNOutputLayers(nn.Module):
 
         self.feature_store = Store(num_classes + 1, clustering_items_per_class)
         self.means = [None for _ in range(num_classes + 1)]
+
+        self.hingeloss = nn.HingeEmbeddingLoss(2)
+        self.enable_clustering = enable_clustering
+
+        # self.ae_model = AE(input_size, clustering_z_dimension)
+        # self.ae_model.apply(Xavier)
 
     @classmethod
     def from_config(cls, cfg, input_shape):
@@ -441,11 +476,13 @@ class FastRCNNOutputLayers(nn.Module):
             "test_nms_thresh"       : cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST,
             "test_topk_per_image"   : cfg.TEST.DETECTIONS_PER_IMAGE,
             "box_reg_loss_type"     : cfg.MODEL.ROI_BOX_HEAD.BBOX_REG_LOSS_TYPE,
-            "loss_weight"           : {"loss_box_reg": cfg.MODEL.ROI_BOX_HEAD.BBOX_REG_LOSS_WEIGHT, "loss_clustering": 0.00001},
+            "loss_weight"           : {"loss_box_reg": cfg.MODEL.ROI_BOX_HEAD.BBOX_REG_LOSS_WEIGHT, "loss_clustering": 0.1},
             "clustering_items_per_class" : cfg.OWOD.CLUSTERING.ITEMS_PER_CLASS,
             "clustering_start_iter" : cfg.OWOD.CLUSTERING.START_ITER,
             "clustering_update_mu_iter" : cfg.OWOD.CLUSTERING.UPDATE_MU_ITER,
             "clustering_momentum"   : cfg.OWOD.CLUSTERING.MOMENTUM,
+            "clustering_z_dimension": cfg.OWOD.CLUSTERING.Z_DIMENSION,
+            "enable_clustering"     : cfg.OWOD.ENABLE_CLUSTERING
             # fmt: on
         }
 
@@ -473,7 +510,77 @@ class FastRCNNOutputLayers(nn.Module):
         gt_classes = torch.cat([p.gt_classes for p in proposals])
         self.feature_store.add(features, gt_classes)
 
-    def clstr_loss(self, input_features, proposals):
+        # self.feature_store.add(F.normalize(features, dim=0), gt_classes)
+        # self.feature_store.add(self.ae_model.encoder(features), gt_classes)
+
+    # def clstr_loss(self, input_features, proposals):
+    #     """
+    #     Get the foreground input_features, generate distributions for the class,
+    #     get probability of each feature from each distribution;
+    #     Compute loss: if belonging to a class -> likelihood should be higher
+    #                   else -> lower
+    #     :param input_features:
+    #     :param proposals:
+    #     :return:
+    #     """
+    #     loss = 0
+    #     gt_classes = torch.cat([p.gt_classes for p in proposals])
+    #     mask = gt_classes != self.num_classes
+    #     fg_features = input_features[mask]
+    #     classes = gt_classes[mask]
+    #     # fg_features = self.ae_model.encoder(fg_features)
+    #
+    #     # Distribution per class
+    #     log_prob = [None for _ in range(self.num_classes + 1)]
+    #     # https://github.com/pytorch/pytorch/issues/23780
+    #     for cls_index, mu in enumerate(self.means):
+    #         if mu is not None:
+    #             dist = Normal(loc=mu.cuda(), scale=torch.ones_like(mu.cuda()))
+    #             log_prob[cls_index] = dist.log_prob(fg_features).mean(dim=1)
+    #             # log_prob[cls_index] = torch.distributions.multivariate_normal. \
+    #             #     MultivariateNormal(mu.cuda(), torch.eye(len(mu)).cuda()).log_prob(fg_features)
+    #                 # MultivariateNormal(mu, torch.eye(len(mu))).log_prob(fg_features.cpu())
+    #             #                     MultivariateNormal(mu[:2], torch.eye(len(mu[:2]))).log_prob(fg_features[:,:2].cpu())
+    #         else:
+    #             log_prob[cls_index] = torch.zeros((len(fg_features))).cuda()
+    #
+    #     log_prob = torch.stack(log_prob).T # num_of_fg_proposals x num_of_classes
+    #     for i, p in enumerate(log_prob):
+    #         weight = torch.ones_like(p) * -1
+    #         weight[classes[i]] = 1
+    #         p = p * weight
+    #         loss += p.mean()
+    #     return loss
+
+    # def clstr_loss_l2(self, input_features, proposals):
+    #     """
+    #     Get the foreground input_features, generate distributions for the class,
+    #     get probability of each feature from each distribution;
+    #     Compute loss: if belonging to a class -> likelihood should be higher
+    #                   else -> lower
+    #     :param input_features:
+    #     :param proposals:
+    #     :return:
+    #     """
+    #     loss = 0
+    #     gt_classes = torch.cat([p.gt_classes for p in proposals])
+    #     mask = gt_classes != self.num_classes
+    #     fg_features = input_features[mask]
+    #     classes = gt_classes[mask]
+    #     fg_features = self.ae_model.encoder(fg_features)
+    #
+    #     for index, feature in enumerate(fg_features):
+    #         for cls_index, mu in enumerate(self.means):
+    #             if mu is not None and feature is not None:
+    #                 mu = mu.cuda()
+    #                 if  classes[index] ==  cls_index:
+    #                     loss -= F.mse_loss(feature, mu)
+    #                 else:
+    #                     loss += F.mse_loss(feature, mu)
+    #
+    #     return loss
+
+    def clstr_loss_l2_cdist(self, input_features, proposals):
         """
         Get the foreground input_features, generate distributions for the class,
         get probability of each feature from each distribution;
@@ -483,33 +590,44 @@ class FastRCNNOutputLayers(nn.Module):
         :param proposals:
         :return:
         """
-        loss = 0
         gt_classes = torch.cat([p.gt_classes for p in proposals])
         mask = gt_classes != self.num_classes
         fg_features = input_features[mask]
         classes = gt_classes[mask]
+        # fg_features = F.normalize(fg_features, dim=0)
+        # fg_features = self.ae_model.encoder(fg_features)
 
-        # Distribution per class
-        log_prob = [None for _ in range(self.num_classes + 1)]
-        for cls_index, mu in enumerate(self.means):
-            if mu is not None:
-                # dist = Normal(loc=mu.cuda(), scale=torch.ones_like(mu.cuda()))
-                # log_prob[cls_index] = dist.log_prob(fg_features).mean(dim=1)
-                log_prob[cls_index] = torch.distributions.multivariate_normal.\
-                    MultivariateNormal(mu[:128], torch.eye(len(mu[:128]))).log_prob(fg_features[:,:128].cpu())
-                #                     MultivariateNormal(mu[:2], torch.eye(len(mu[:2]))).log_prob(fg_features[:,:2].cpu())
-            else:
-                log_prob[cls_index] = torch.zeros((len(fg_features)))
+        all_means = self.means
+        for item in all_means:
+            if item != None:
+                length = item.shape
+                break
 
-        log_prob = torch.stack(log_prob).T # num_of_fg_proposals x num_of_classes
-        for i, p in enumerate(log_prob):
-            weight = torch.ones_like(p) * -1
-            weight[classes[i]] = 1
-            p = p * weight
-            loss += p.mean()
+        for i, item in enumerate(all_means):
+            if item == None:
+                all_means[i] = torch.zeros((length))
+
+        distances = torch.cdist(fg_features, torch.stack(all_means).cuda(), p=2.0)
+        labels = []
+
+        for index, feature in enumerate(fg_features):
+            for cls_index, mu in enumerate(self.means):
+                if mu is not None and feature is not None:
+                    if  classes[index] ==  cls_index:
+                        labels.append(1)
+                    else:
+                        labels.append(-1)
+                else:
+                    labels.append(0)
+
+        loss = self.hingeloss(distances, torch.tensor(labels).reshape((-1, self.num_classes+1)).cuda())
+
         return loss
 
     def get_clustering_loss(self, input_features, proposals):
+        if not self.enable_clustering:
+            return 0
+
         storage = get_event_storage()
         c_loss = 0
         if storage.iter == self.clustering_start_iter :
@@ -520,7 +638,10 @@ class FastRCNNOutputLayers(nn.Module):
                 else:
                     mu = torch.tensor(item).mean(dim=0)
                     self.means[index] = mu
-            c_loss = self.clstr_loss(input_features, proposals)
+            c_loss = self.clstr_loss_l2_cdist(input_features, proposals)
+            # Freeze the parameters when clustering starts
+            # for param in self.ae_model.parameters():
+            #     param.requires_grad = False
         elif storage.iter > self.clustering_start_iter:
             if storage.iter % self.clustering_update_mu_iter == 0:
                 # Compute new MUs
@@ -537,8 +658,16 @@ class FastRCNNOutputLayers(nn.Module):
                         self.means[i] = self.clustering_momentum * mean + \
                                         (1 - self.clustering_momentum) * new_means[i]
 
-            c_loss = self.clstr_loss(input_features, proposals)
+            c_loss = self.clstr_loss_l2_cdist(input_features, proposals)
         return c_loss
+
+    # def get_ae_loss(self, input_features):
+    #     # storage = get_event_storage()
+    #     # ae_loss = 0
+    #     # if storage.iter < self.clustering_start_iter :
+    #     features_hat = self.ae_model(input_features)
+    #     ae_loss = F.mse_loss(features_hat, input_features)
+    #     return ae_loss
 
     # TODO: move the implementation to this class.
     def losses(self, predictions, proposals, input_features=None):
@@ -562,6 +691,7 @@ class FastRCNNOutputLayers(nn.Module):
             self.box_reg_loss_type,
         ).losses()
         if input_features is not None:
+            # losses["loss_cluster_encoder"] = self.get_ae_loss(input_features)
             losses["loss_clustering"] = self.get_clustering_loss(input_features, proposals)
         return {k: v * self.loss_weight.get(k, 1.0) for k, v in losses.items()}
 

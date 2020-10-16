@@ -609,6 +609,8 @@ _C.OWOD.CLUSTERING.ITEMS_PER_CLASS = 10
 _C.OWOD.CLUSTERING.START_ITER = 100
 _C.OWOD.CLUSTERING.UPDATE_MU_ITER = 200
 _C.OWOD.CLUSTERING.MOMENTUM = 0.9
+_C.OWOD.CLUSTERING.Z_DIMENSION = 64
+
 
 # ---------------------------------------------------------------------------- #
 # Misc options

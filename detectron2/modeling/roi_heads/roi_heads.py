@@ -383,6 +383,7 @@ class Res5ROIHeads(ROIHeads):
         pooler_scales     = (1.0 / input_shape[self.in_features[0]].stride, )
         sampling_ratio    = cfg.MODEL.ROI_BOX_HEAD.POOLER_SAMPLING_RATIO
         self.mask_on      = cfg.MODEL.MASK_ON
+        self.enable_clustering = cfg.OWOD.ENABLE_CLUSTERING
         # fmt: on
         assert not cfg.MODEL.KEYPOINT_ON
         assert len(self.in_features) == 1
@@ -454,7 +455,8 @@ class Res5ROIHeads(ROIHeads):
         predictions = self.box_predictor(input_features)
 
         if self.training:
-            self.box_predictor.update_feature_store(input_features, proposals)
+            if self.enable_clustering:
+                self.box_predictor.update_feature_store(input_features, proposals)
             del features
             losses = self.box_predictor.losses(predictions, proposals, input_features)
             if self.mask_on:
