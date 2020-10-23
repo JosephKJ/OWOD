@@ -15,8 +15,10 @@ DATASETS:
   TRAIN: ('voc_2007_trainval', 'voc_2012_trainval')
   TEST: ('voc_2007_test',)
 SOLVER:
-  STEPS: (12000, 16000)
-  MAX_ITER: 18000  # 17.4 epochs
+  STEPS: (27000, 30000)
+  MAX_ITER: 36000  # 17.4 epochs
+#  STEPS: (12000, 16000)
+#  MAX_ITER: 18000  # 17.4 epochs
   WARMUP_ITERS: 100
 OUTPUT_DIR: "./output/baseline_run"
 OWOD:
