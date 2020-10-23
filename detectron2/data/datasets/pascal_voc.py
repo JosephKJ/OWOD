@@ -26,6 +26,36 @@ CLASS_NAMES = (
 # )
 # fmt: on
 
+VOC_CLASS_NAMES = (
+    "aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat",
+    "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person",
+    "pottedplant", "sheep", "sofa", "train", "tvmonitor"
+)
+
+T2_CLASS_NAMES = (
+    "truck", "trafficlight", "firehydrant", "stopsigh", "parkingmeter",
+    "bench", "elephant", "bear", "zebra", "giraffe",
+    "backpack", "umbrella", "handbag", "tie", "suitcase",
+    "microwave", "oven", "toaster", "sink", "refrigerator"
+)
+
+T3_CLASS_NAMES = (
+    "frisbee", "skis", "snowboard", "sportsball", "kite",
+    "baseballbat", "baseballglove", "skateboard", "surfboard", "tennisracket",
+    "banana", "apple", "sandwich", "orange", "broccoli",
+    "carrot", "hotdog", "pizza", "donut", "cake"
+)
+
+T4_CLASS_NAMES = (
+    "bed", "toilet", "tv", "laptop", "mouse",
+    "remote", "keyboard", "cellphone", "book", "clock",
+    "vase", "scissors", "teddybear", "hairdrier", "toothbrush",
+    "bottle", "wineglass", "cup", "fork", "knife", "spoon", "bowl"
+)
+
+UNK_CLASS = ("unknown")
+
+
 
 def load_voc_instances(dirname: str, split: str, class_names: Union[List[str], Tuple[str, ...]]):
     """
