@@ -611,6 +611,8 @@ _C.OWOD.CLUSTERING.UPDATE_MU_ITER = 200
 _C.OWOD.CLUSTERING.MOMENTUM = 0.9
 _C.OWOD.CLUSTERING.Z_DIMENSION = 64
 
+_C.OWOD.PREV_INTRODUCED_CLS = 0
+_C.OWOD.CUR_INTRODUCED_CLS = 20
 
 # ---------------------------------------------------------------------------- #
 # Misc options

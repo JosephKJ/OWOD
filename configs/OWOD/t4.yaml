@@ -1,0 +1,14 @@
+_BASE_: "../Base-RCNN-C4-OWOD.yaml"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+DATASETS:
+  TRAIN: ('t4_train',)
+  TEST: ('voc_2007_test','t2_test', 't3_test', 't4_test')
+SOLVER:
+  STEPS: (42000, 46000)
+  MAX_ITER: 48000
+  WARMUP_ITERS: 0
+OUTPUT_DIR: "./output/t4"
+OWOD:
+  PREV_INTRODUCED_CLS: 60
+  CUR_INTRODUCED_CLS: 20

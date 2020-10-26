@@ -28,7 +28,7 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
     official API.
     """
 
-    def __init__(self, dataset_name):
+    def __init__(self, dataset_name, cfg=None):
         """
         Args:
             dataset_name (str): name of the dataset, e.g., "voc_2007_test"
@@ -42,6 +42,10 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
         self._is_2007 = meta.year == 2007
         self._cpu_device = torch.device("cpu")
         self._logger = logging.getLogger(__name__)
+        if cfg is not None:
+            self.prev_intro_cls = cfg.OWOD.PREV_INTRODUCED_CLS
+            self.curr_intro_cls = cfg.OWOD.CUR_INTRODUCED_CLS
+            self.total_num_class = cfg.MODEL.ROI_HEADS.NUM_CLASSES
 
     def reset(self):
         self._predictions = defaultdict(list)  # class name -> list of prediction strings
@@ -114,8 +118,9 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
         ret["bbox"] = {"AP": np.mean(list(mAP.values())), "AP50": mAP[50], "AP75": mAP[75]}
 
         # Extra logging of class-wise APs
+        avg_precs = list(np.mean([x for _, x in aps.items()], axis=0))
         self._logger.info(self._class_names)
-        self._logger.info("AP__: " + str(['%.1f' % x for x in list(np.mean([x for _, x in aps.items()], axis=0))]))
+        self._logger.info("AP__: " + str(['%.1f' % x for x in avg_precs]))
         self._logger.info("AP50: " + str(['%.1f' % x for x in aps[50]]))
         self._logger.info("AP75: " + str(['%.1f' % x for x in aps[75]]))
 
@@ -152,8 +157,8 @@ def parse_rec(filename):
     for obj in tree.findall("object"):
         obj_struct = {}
         obj_struct["name"] = obj.find("name").text
-        obj_struct["pose"] = obj.find("pose").text
-        obj_struct["truncated"] = int(obj.find("truncated").text)
+        # obj_struct["pose"] = obj.find("pose").text
+        # obj_struct["truncated"] = int(obj.find("truncated").text)
         obj_struct["difficult"] = int(obj.find("difficult").text)
         bbox = obj.find("bndbox")
         obj_struct["bbox"] = [

@@ -27,6 +27,7 @@ from .cityscapes_panoptic import register_all_cityscapes_panoptic
 from .coco import load_sem_seg
 from .lvis import get_lvis_instances_meta, register_lvis_instances
 from .pascal_voc import register_pascal_voc
+from .voc_style_coco import register_voc_style_coco
 from .register_coco import register_coco_instances, register_coco_panoptic_separated
 
 # ==== Predefined datasets and splits for COCO ==========
@@ -220,6 +221,24 @@ def register_all_pascal_voc(root):
         MetadataCatalog.get(name).evaluator_type = "pascal_voc"
 
 
+def register_all_voc_style_coco(root):
+    SPLITS = [
+        ("t2_train", "coco17_voc_style"),
+        ("t2_test", "coco17_voc_style"),
+        ("t2_test_unk", "coco17_voc_style"),
+        ("t3_train", "coco17_voc_style"),
+        ("t3_test", "coco17_voc_style"),
+        ("t3_test_unk", "coco17_voc_style"),
+        ("t4_train", "coco17_voc_style"),
+        ("t4_test", "coco17_voc_style"),
+        ("t4_test_unk", "coco17_voc_style"),
+    ]
+    for name, dirname in SPLITS:
+        year = 2007
+        register_voc_style_coco(name, os.path.join(root, dirname), name, year)
+        MetadataCatalog.get(name).evaluator_type = "pascal_voc"
+
+
 def register_all_ade20k(root):
     root = os.path.join(root, "ADEChallengeData2016")
     for name, dirname in [("train", "training"), ("val", "validation")]:
@@ -248,5 +267,6 @@ if __name__.endswith(".builtin"):
     register_all_cityscapes_panoptic(_root)
     # register_all_pascal_voc(_root)
     # register_all_pascal_voc('/home/joseph/workspace/OWOD/datasets')
-    register_all_pascal_voc('/home/fk1/workspace/OWOD/datasets')
+    register_all_pascal_voc('/home/joseph/workspace/OWOD/datasets')
+    register_all_voc_style_coco('/home/joseph/workspace/OWOD/datasets')
     register_all_ade20k(_root)

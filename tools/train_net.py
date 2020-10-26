@@ -85,7 +85,7 @@ class Trainer(DefaultTrainer):
             ), "CityscapesEvaluator currently do not work with multiple machines."
             return CityscapesSemSegEvaluator(dataset_name)
         elif evaluator_type == "pascal_voc":
-            return PascalVOCDetectionEvaluator(dataset_name)
+            return PascalVOCDetectionEvaluator(dataset_name, cfg)
         elif evaluator_type == "lvis":
             return LVISEvaluator(dataset_name, cfg, True, output_folder)
         if len(evaluator_list) == 0:

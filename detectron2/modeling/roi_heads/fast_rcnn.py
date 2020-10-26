@@ -144,6 +144,7 @@ class FastRCNNOutputs:
         pred_class_logits,
         pred_proposal_deltas,
         proposals,
+        invalid_class_range,
         smooth_l1_beta=0.0,
         box_reg_loss_type="smooth_l1",
     ):
@@ -178,6 +179,7 @@ class FastRCNNOutputs:
         self.box_reg_loss_type = box_reg_loss_type
 
         self.image_shapes = [x.image_size for x in proposals]
+        self.invalid_class_range = invalid_class_range
 
         if len(proposals):
             box_type = type(proposals[0].proposal_boxes)
@@ -231,6 +233,7 @@ class FastRCNNOutputs:
             return 0.0 * self.pred_class_logits.sum()
         else:
             self._log_accuracy()
+            self.pred_class_logits[:, self.invalid_class_range] = -10e10
             return F.cross_entropy(self.pred_class_logits, self.gt_classes, reduction="mean")
 
     def box_reg_loss(self):
@@ -396,6 +399,8 @@ class FastRCNNOutputLayers(nn.Module):
         clustering_momentum,
         clustering_z_dimension,
         enable_clustering,
+        prev_intro_cls,
+        curr_intro_cls,
         num_classes: int,
         test_score_thresh: float = 0.0,
         test_nms_thresh: float = 0.5,
@@ -460,6 +465,12 @@ class FastRCNNOutputLayers(nn.Module):
         self.hingeloss = nn.HingeEmbeddingLoss(2)
         self.enable_clustering = enable_clustering
 
+        self.prev_intro_cls = prev_intro_cls
+        self.curr_intro_cls = curr_intro_cls
+        self.seen_classes = self.prev_intro_cls + self.curr_intro_cls
+        self.invalid_class_range = list(range(self.seen_classes, self.num_classes-1))
+        logging.getLogger(__name__).info("Invalid class range: " + str(self.invalid_class_range))
+
         # self.ae_model = AE(input_size, clustering_z_dimension)
         # self.ae_model.apply(Xavier)
 
@@ -482,7 +493,9 @@ class FastRCNNOutputLayers(nn.Module):
             "clustering_update_mu_iter" : cfg.OWOD.CLUSTERING.UPDATE_MU_ITER,
             "clustering_momentum"   : cfg.OWOD.CLUSTERING.MOMENTUM,
             "clustering_z_dimension": cfg.OWOD.CLUSTERING.Z_DIMENSION,
-            "enable_clustering"     : cfg.OWOD.ENABLE_CLUSTERING
+            "enable_clustering"     : cfg.OWOD.ENABLE_CLUSTERING,
+            "prev_intro_cls"        : cfg.OWOD.PREV_INTRODUCED_CLS,
+            "curr_intro_cls"        : cfg.OWOD.CUR_INTRODUCED_CLS
             # fmt: on
         }
 
@@ -687,6 +700,7 @@ class FastRCNNOutputLayers(nn.Module):
             scores,
             proposal_deltas,
             proposals,
+            self.invalid_class_range,
             self.smooth_l1_beta,
             self.box_reg_loss_type,
         ).losses()
