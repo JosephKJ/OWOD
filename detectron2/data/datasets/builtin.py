@@ -267,6 +267,6 @@ if __name__.endswith(".builtin"):
     register_all_cityscapes_panoptic(_root)
     # register_all_pascal_voc(_root)
     # register_all_pascal_voc('/home/joseph/workspace/OWOD/datasets')
-    register_all_pascal_voc('/home/joseph/workspace/OWOD/datasets')
-    register_all_voc_style_coco('/home/joseph/workspace/OWOD/datasets')
+    register_all_pascal_voc('/home/fk1/workspace/OWOD/datasets')
+    register_all_voc_style_coco('/home/fk1/workspace/OWOD/datasets')
     register_all_ade20k(_root)
