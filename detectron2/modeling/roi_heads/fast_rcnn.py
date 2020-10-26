@@ -667,7 +667,7 @@ class FastRCNNOutputLayers(nn.Module):
                         new_means[index] = torch.tensor(item).mean(dim=0)
                 # Update the MUs
                 for i, mean in enumerate(self.means):
-                    if(mean) is not None:
+                    if(mean) is not None and new_means[i] is not None:
                         self.means[i] = self.clustering_momentum * mean + \
                                         (1 - self.clustering_momentum) * new_means[i]
 
