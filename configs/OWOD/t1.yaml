@@ -3,7 +3,8 @@ MODEL:
   WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
 DATASETS:
   TRAIN: ('voc_2007_trainval', 'voc_2012_trainval')
-  TEST: ('voc_2007_test','t2_test_unk', 't3_test_unk', 't4_test_unk')
+  TEST: ('voc_2007_test', 't2_all_test_unk')
+#  TEST: ('voc_2007_test','t2_test_unk', 't3_test_unk', 't4_test_unk')
 SOLVER:
   STEPS: (12000, 16000)
   MAX_ITER: 18000
