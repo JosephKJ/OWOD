@@ -232,6 +232,7 @@ def register_all_voc_style_coco(root):
         ("t4_train", "coco17_voc_style"),
         ("t4_test", "coco17_voc_style"),
         ("t4_test_unk", "coco17_voc_style"),
+        ("t2_all_test_unk", "coco17_voc_style")
     ]
     for name, dirname in SPLITS:
         year = 2007
