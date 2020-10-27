@@ -1,6 +1,7 @@
 _BASE_: "../Base-RCNN-C4-OWOD.yaml"
 MODEL:
-  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+#  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  WEIGHTS: "/home/fk1/workspace/OWOD/output/t1/model_final.pth"
 DATASETS:
   TRAIN: ('voc_2007_trainval', 'voc_2012_trainval')
   TEST: ('voc_2007_test', 't2_all_test_unk')
@@ -9,7 +10,7 @@ SOLVER:
   STEPS: (12000, 16000)
   MAX_ITER: 18000
   WARMUP_ITERS: 100
-OUTPUT_DIR: "./output/t1"
+OUTPUT_DIR: "./output/t1_eval"
 OWOD:
   PREV_INTRODUCED_CLS: 0
   CUR_INTRODUCED_CLS: 20
