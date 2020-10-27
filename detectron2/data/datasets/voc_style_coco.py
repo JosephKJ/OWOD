@@ -90,8 +90,11 @@ def load_voc_coco_instances(dirname: str, split: str, class_names: Union[List[st
             if cls_name not in known_class_list:
                 continue
 
-            if 'unk' in split and len(fileid) >= 10:
-                cls = "unknown"
+            if len(fileid) >= 10:
+                if 'unk' in split:
+                    cls = "unknown"
+                else:
+                    cls = cls_name
             else:
                 cls = cls_name
             # We include "difficult" samples in training.
