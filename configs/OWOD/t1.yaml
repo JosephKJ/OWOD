@@ -4,7 +4,7 @@ MODEL:
   WEIGHTS: "/home/fk1/workspace/OWOD/output/t1/model_final.pth"
 DATASETS:
   TRAIN: ('voc_2007_trainval', 'voc_2012_trainval')
-  TEST: ('voc_2007_test', 't2_all_test_unk')
+  TEST: ('t2_all_test_unk')
 #  TEST: ('voc_2007_test','t2_test_unk', 't3_test_unk', 't4_test_unk')
 SOLVER:
   STEPS: (12000, 16000)
