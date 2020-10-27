@@ -94,8 +94,9 @@ def load_voc_coco_instances(dirname: str, split: str, class_names: Union[List[st
             #     cls = "unknown"
             # else:
             #     cls = cls_name
-            print(len(fileid))
+            print(fileid + "--> " + str(len(fileid)))
             print(type(fileid))
+            print('\n\n')
 
             if len(fileid) > 10:
                 cls = "unknown"
