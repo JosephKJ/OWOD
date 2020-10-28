@@ -14,16 +14,16 @@ __all__ = ["load_voc_instances", "register_pascal_voc"]
 
 
 # fmt: off
-CLASS_NAMES = (
-    "aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat",
-    "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person",
-    "pottedplant", "sheep", "sofa", "train", "tvmonitor"
-)
 # CLASS_NAMES = (
 #     "aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat",
 #     "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person",
-#     "pottedplant", "sheep", "sofa", "train", "tvmonitor", "unknown"
+#     "pottedplant", "sheep", "sofa", "train", "tvmonitor"
 # )
+CLASS_NAMES = (
+    "aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat",
+    "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person",
+    "pottedplant", "sheep", "sofa", "train", "tvmonitor", "unknown"
+)
 # fmt: on
 
 def load_voc_instances(dirname: str, split: str, class_names: Union[List[str], Tuple[str, ...]]):
