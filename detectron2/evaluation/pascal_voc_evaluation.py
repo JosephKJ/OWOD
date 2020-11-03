@@ -4,7 +4,6 @@
 import logging
 import numpy as np
 import os
-import sys
 import tempfile
 import xml.etree.ElementTree as ET
 from collections import OrderedDict, defaultdict
@@ -17,7 +16,6 @@ from detectron2.utils import comm
 
 from .evaluator import DatasetEvaluator
 
-np.set_printoptions(threshold=sys.maxsize)
 
 class PascalVOCDetectionEvaluator(DatasetEvaluator):
     """
@@ -110,7 +108,6 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
                         cls_name,
                         ovthresh=thresh / 100.0,
                         use_07_metric=self._is_2007,
-                        known_classes=self._class_names,
                     )
                     aps[thresh].append(ap * 100)
                     # recs[thresh].append(rec * 100)
@@ -152,25 +149,14 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
 
 
 @lru_cache(maxsize=None)
-def parse_rec(filename, known_classes):
+def parse_rec(filename):
     """Parse a PASCAL VOC xml file."""
-    has_unk = False
-    if 'unk' in filename:
-        has_unk = True
-        filename = filename.replace('_unk', '')
-
     with PathManager.open(filename) as f:
         tree = ET.parse(f)
     objects = []
     for obj in tree.findall("object"):
-        cls = obj.find("name").text
-        if has_unk:
-            if cls not in known_classes:
-                cls = 'unknown'
-            # else:
-            #     continue
         obj_struct = {}
-        obj_struct["name"] = cls
+        obj_struct["name"] = obj.find("name").text
         # obj_struct["pose"] = obj.find("pose").text
         # obj_struct["truncated"] = int(obj.find("truncated").text)
         obj_struct["difficult"] = int(obj.find("difficult").text)
@@ -218,7 +204,7 @@ def voc_ap(rec, prec, use_07_metric=False):
     return ap
 
 
-def voc_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_metric=False, known_classes=None):
+def voc_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_metric=False):
     """rec, prec, ap = voc_eval(detpath,
                                 annopath,
                                 imagesetfile,
@@ -251,13 +237,12 @@ def voc_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_me
     # load annots
     recs = {}
     for imagename in imagenames:
-        recs[imagename.replace('_unk', '')] = parse_rec(annopath.format(imagename), tuple(known_classes))
+        recs[imagename] = parse_rec(annopath.format(imagename))
 
     # extract gt objects for this class
     class_recs = {}
     npos = 0
     for imagename in imagenames:
-        imagename = imagename.replace('_unk', '')
         R = [obj for obj in recs[imagename] if obj["name"] == classname]
         bbox = np.array([x["bbox"] for x in R])
         difficult = np.array([x["difficult"] for x in R]).astype(np.bool)
@@ -324,40 +309,12 @@ def voc_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_me
             fp[d] = 1.0
 
     # compute precision recall
-
-    # if ovthresh == 0.5:
-    #     if classname == 'unknown' or classname == 'aeroplane':
-    #         print('\n image_ids: ')
-    #         print(image_ids)
-    #         print('\n FP: ')
-    #         print(fp)
-    #         print('\n TP: ')
-    #         print(tp)
-
     fp = np.cumsum(fp)
     tp = np.cumsum(tp)
-
-    # if ovthresh == 0.5:
-    #     if classname == 'unknown' or classname == 'aeroplane':
-    #         print('\n\n FP after cumsum: ')
-    #         print(fp)
-    #         print('\n TP after cumsum: ')
-    #         print(tp)
-
-
     rec = tp / float(npos)
     # avoid divide by zero in case the first detection matches a difficult
     # ground truth
     prec = tp / np.maximum(tp + fp, np.finfo(np.float64).eps)
     ap = voc_ap(rec, prec, use_07_metric)
-
-    # print('\nclassname:' + classname)
-    # print('\n Prec:')
-    # print(prec)
-    # print('\n Recall:')
-    # print(rec)
-    # print('\n AP:')
-    # print(ap)
-    # print('\n \n')
 
     return rec, prec, ap
