@@ -1,6 +1,6 @@
 import random
 from collections import deque
-
+import numpy as np
 
 class Store:
     def __init__(self, total_num_classes, items_per_class, shuffle=False):
@@ -55,13 +55,8 @@ if __name__ == "__main__":
     # print(store.retrieve(3))
     # print(store.retrieve(9))
     print(store.retrieve(-1))
-    print(len(store))
-    store.reset()
-    print(len(store))
+    # print(len(store))
+    # store.reset()
+    # print(len(store))
 
-    means = [None for i in range(10)]
-    print(means)
-    means[0] = 100
-    print(means)
-    print(means[1])
-    print(means[0])
+    print(store)

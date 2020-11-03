@@ -4,6 +4,7 @@ import logging
 import numpy as np
 import heapq
 import operator
+import shortuuid
 from typing import Dict, List, Optional, Tuple, Union
 import torch
 from torch import nn
@@ -436,6 +437,12 @@ class Res5ROIHeads(ROIHeads):
         x = self.pooler(features, boxes)
         return self.res5(x)
 
+    def log_features(self, features, proposals):
+        gt_classes = torch.cat([p.gt_classes for p in proposals])
+        data = (features, gt_classes)
+        location = '/home/fk1/workspace/OWOD/output/features/' + shortuuid.uuid() + '.pkl'
+        torch.save(data, location)
+
     def forward(self, images, features, proposals, targets=None):
         """
         See :meth:`ROIHeads.forward`.
@@ -455,6 +462,7 @@ class Res5ROIHeads(ROIHeads):
         predictions = self.box_predictor(input_features)
 
         if self.training:
+            # self.log_features(input_features, proposals)
             if self.enable_clustering:
                 self.box_predictor.update_feature_store(input_features, proposals)
             del features

@@ -19,6 +19,12 @@ VOC_CLASS_NAMES = [
     "pottedplant", "sheep", "sofa", "train", "tvmonitor"
 ]
 
+VOC_CLASS_NAMES_COCOFIED = [
+    "airplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat",
+    "chair", "cow", "dining table", "dog", "horse", "motorcycle", "person",
+    "potted plant", "sheep", "couch", "train", "tv"
+]
+
 T2_CLASS_NAMES = [
     "truck", "traffic light", "fire hydrant", "stop sign", "parking meter",
     "bench", "elephant", "bear", "zebra", "giraffe",
@@ -42,9 +48,11 @@ T4_CLASS_NAMES = [
 
 UNK_CLASS = ["unknown"]
 
-INCR_CLASS_NAMES = itertools.chain(VOC_CLASS_NAMES, T2_CLASS_NAMES, T3_CLASS_NAMES, T4_CLASS_NAMES, UNK_CLASS)
+# INCR_CLASS_NAMES = itertools.chain(VOC_CLASS_NAMES, T2_CLASS_NAMES, T3_CLASS_NAMES, T4_CLASS_NAMES, UNK_CLASS)
+INCR_CLASS_NAMES = itertools.chain(VOC_CLASS_NAMES,  UNK_CLASS)
 INCR_CLASS_NAMES = tuple(INCR_CLASS_NAMES)
 
+INCR_CLASS_NAMES_2 = tuple(itertools.chain(VOC_CLASS_NAMES_COCOFIED,  UNK_CLASS))
 
 def load_voc_coco_instances(dirname: str, split: str, class_names: Union[List[str], Tuple[str, ...]]):
     """
@@ -65,6 +73,8 @@ def load_voc_coco_instances(dirname: str, split: str, class_names: Union[List[st
         known_class_list = T3_CLASS_NAMES
     elif 't4' in split:
         known_class_list = T4_CLASS_NAMES
+
+    unknown_class_list = tuple(itertools.chain(T2_CLASS_NAMES, T3_CLASS_NAMES, T4_CLASS_NAMES))
 
     # Needs to read many small annotation files. Makes sense at local
     annotation_dirname = PathManager.get_local_path(os.path.join(dirname, "Annotations/"))
@@ -87,21 +97,19 @@ def load_voc_coco_instances(dirname: str, split: str, class_names: Union[List[st
         for obj in tree.findall("object"):
             cls_name = obj.find("name").text
 
-            if cls_name not in known_class_list:
-                continue
+            cls = cls_name
 
-            # if 'unk' in split:g
+            if cls_name in unknown_class_list:
+                cls = "unknown"
+
+            # if cls_name not in known_class_list:
+            #     continue
+            #
+            # if 'unk' in split:
             #     cls = "unknown"
             # else:
             #     cls = cls_name
-            print(fileid + "--> " + str(len(fileid)))
-            print(type(fileid))
-            print('\n\n')
 
-            if len(fileid) > 10:
-                cls = "unknown"
-            else:
-                cls = cls_name
             # We include "difficult" samples in training.
             # Based on limited experiments, they don't hurt accuracy.
             # difficult = int(obj.find("difficult").text)
@@ -115,9 +123,14 @@ def load_voc_coco_instances(dirname: str, split: str, class_names: Union[List[st
             # In coordinate space this is represented by (xmin=0, xmax=W)
             bbox[0] -= 1.0
             bbox[1] -= 1.0
-            instances.append(
-                {"category_id": class_names.index(cls), "bbox": bbox, "bbox_mode": BoxMode.XYXY_ABS}
-            )
+            try:
+                instances.append(
+                    {"category_id": INCR_CLASS_NAMES_2.index(cls), "bbox": bbox, "bbox_mode": BoxMode.XYXY_ABS}
+                )
+            except:
+                print(cls)
+                print(class_names)
+                print(unknown_class_list)
         r["annotations"] = instances
         dicts.append(r)
     return dicts

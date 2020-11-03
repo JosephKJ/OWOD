@@ -42,6 +42,11 @@ def load_voc_instances(dirname: str, split: str, class_names: Union[List[str], T
     annotation_dirname = PathManager.get_local_path(os.path.join(dirname, "Annotations/"))
     dicts = []
     for fileid in fileids:
+        has_unk = False
+        if 'unk' in fileid:
+            has_unk = True
+            fileid = fileid.replace('_unk','')
+
         anno_file = os.path.join(annotation_dirname, fileid + ".xml")
         jpeg_file = os.path.join(dirname, "JPEGImages", fileid + ".jpg")
 
@@ -58,6 +63,11 @@ def load_voc_instances(dirname: str, split: str, class_names: Union[List[str], T
 
         for obj in tree.findall("object"):
             cls = obj.find("name").text
+            if has_unk:
+                if cls not in class_names:
+                    cls = 'unknown'
+                # else:
+                #     continue
             # We include "difficult" samples in training.
             # Based on limited experiments, they don't hurt accuracy.
             # difficult = int(obj.find("difficult").text)
