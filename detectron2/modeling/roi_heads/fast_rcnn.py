@@ -627,7 +627,7 @@ class FastRCNNOutputLayers(nn.Module):
             if item == None:
                 all_means[i] = torch.zeros((length))
 
-        distances = torch.cdist(fg_features, torch.stack(all_means).cuda(), p=2.0)
+        distances = torch.cdist(fg_features, torch.stack(all_means).cuda(), p=10.0)
         labels = []
 
         for index, feature in enumerate(fg_features):

@@ -199,7 +199,7 @@ def print_instances_class_histogram(dataset_dicts, class_names):
 
 
 def get_detection_dataset_dicts(
-    dataset_names, filter_empty=True, min_keypoints=0, proposal_files=None
+    dataset_names, filter_empty=True, min_keypoints=0, proposal_files=None, cfg=None
 ):
     """
     Load and prepare dataset dicts for instance detection/segmentation and semantic segmentation.
@@ -236,6 +236,17 @@ def get_detection_dataset_dicts(
     if min_keypoints > 0 and has_instances:
         dataset_dicts = filter_images_with_few_keypoints(dataset_dicts, min_keypoints)
 
+    d_name = dataset_names[0]
+    if 'voc_coco' in d_name:
+        if 'train' in d_name:
+            dataset_dicts = remove_prev_class_and_unk_instances(cfg, dataset_dicts)
+        elif 'test' in d_name:
+            dataset_dicts = label_known_class_and_unknown(cfg, dataset_dicts)
+        elif 'val' in d_name:
+            dataset_dicts = label_known_class_and_unknown(cfg, dataset_dicts)
+        elif 'ft' in d_name:
+            dataset_dicts = remove_unknown_instances(cfg, dataset_dicts)
+
     if has_instances:
         try:
             class_names = MetadataCatalog.get(dataset_names[0]).thing_classes
@@ -247,6 +258,66 @@ def get_detection_dataset_dicts(
     assert len(dataset_dicts), "No valid data found in {}.".format(",".join(dataset_names))
     return dataset_dicts
 
+def remove_prev_class_and_unk_instances(cfg, dataset_dicts):
+    # For training data.
+    prev_intro_cls = cfg.OWOD.PREV_INTRODUCED_CLS
+    curr_intro_cls = cfg.OWOD.CUR_INTRODUCED_CLS
+    valid_classes = range(prev_intro_cls, curr_intro_cls)
+
+    logger = logging.getLogger(__name__)
+    logger.info("Valid classes: " + str(valid_classes))
+    logger.info("Removing earlier seen class objects and the unknown objects...")
+
+    for entry in copy.copy(dataset_dicts):
+        annos = entry["annotations"]
+        for annotation in copy.copy(annos):
+            if annotation["category_id"] not in valid_classes:
+                annos.remove(annotation)
+        if len(annos) == 0:
+            dataset_dicts.remove(entry)
+
+    return dataset_dicts
+
+def remove_unknown_instances(cfg, dataset_dicts):
+    # For finetune data.
+    prev_intro_cls = cfg.OWOD.PREV_INTRODUCED_CLS
+    curr_intro_cls = cfg.OWOD.CUR_INTRODUCED_CLS
+    valid_classes = range(0, prev_intro_cls+curr_intro_cls)
+
+    logger = logging.getLogger(__name__)
+    logger.info("Valid classes: " + str(valid_classes))
+    logger.info("Removing the unknown objects...")
+
+    for entry in copy.copy(dataset_dicts):
+        annos = entry["annotations"]
+        for annotation in copy.copy(annos):
+            if annotation["category_id"] not in valid_classes:
+                annos.remove(annotation)
+        if len(annos) == 0:
+            dataset_dicts.remove(entry)
+
+    return dataset_dicts
+
+def label_known_class_and_unknown(cfg, dataset_dicts):
+    # For test and validation data.
+    # Label known instances the corresponding label and unknown instances as unknown.
+    prev_intro_cls = cfg.OWOD.PREV_INTRODUCED_CLS
+    curr_intro_cls = cfg.OWOD.CUR_INTRODUCED_CLS
+    total_num_class = cfg.MODEL.ROI_HEADS.NUM_CLASSES
+
+    known_classes = range(0, prev_intro_cls+curr_intro_cls)
+
+    logger = logging.getLogger(__name__)
+    logger.info("Known classes: " + str(known_classes))
+    logger.info("Labelling known instances the corresponding label, and unknown instances as unknown...")
+
+    for entry in dataset_dicts:
+        annos = entry["annotations"]
+        for annotation in annos:
+            if annotation["category_id"] not in known_classes:
+                annotation["category_id"] = total_num_class
+
+    return dataset_dicts
 
 def build_batch_data_loader(
     dataset, sampler, total_batch_size, *, aspect_ratio_grouping=False, num_workers=0
@@ -326,6 +397,7 @@ def build_detection_train_loader(cfg, mapper=None):
         if cfg.MODEL.KEYPOINT_ON
         else 0,
         proposal_files=cfg.DATASETS.PROPOSAL_FILES_TRAIN if cfg.MODEL.LOAD_PROPOSALS else None,
+        cfg=cfg,
     )
     dataset = DatasetFromList(dataset_dicts, copy=False)
 
@@ -380,6 +452,7 @@ def build_detection_test_loader(cfg, dataset_name, mapper=None):
         ]
         if cfg.MODEL.LOAD_PROPOSALS
         else None,
+        cfg=cfg
     )
 
     dataset = DatasetFromList(dataset_dicts)

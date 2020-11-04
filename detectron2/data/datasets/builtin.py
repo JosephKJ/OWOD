@@ -214,7 +214,16 @@ def register_all_pascal_voc(root):
         ("voc_2012_trainval", "VOC2012", "trainval"),
         ("voc_2012_train", "VOC2012", "train"),
         ("voc_2012_val", "VOC2012", "val"),
-        ("voc_2007_test_unk", "VOC2007", "test_unk"),
+        ("t1_voc_coco_2007_train", "VOC2007", "t1_train"),
+        ("voc_coco_2007_test", "VOC2007", "all_task_test"),
+        ("voc_coco_2007_val", "VOC2007", "all_task_val"),
+        ("t1_voc_coco_2007_ft", "VOC2007", "t1_ft"),
+        ("t2_voc_coco_2007_train", "VOC2007", "t2_train"),
+        ("t2_voc_coco_2007_ft", "VOC2007", "t2_ft"),
+        ("t3_voc_coco_2007_train", "VOC2007", "t3_train"),
+        ("t3_voc_coco_2007_ft", "VOC2007", "t3_ft"),
+        ("t4_voc_coco_2007_train", "VOC2007", "t4_train"),
+        ("t4_voc_coco_2007_ft", "VOC2007", "t4_ft"),
     ]
     for name, dirname, split in SPLITS:
         year = 2007 if "2007" in name else 2012
@@ -222,23 +231,23 @@ def register_all_pascal_voc(root):
         MetadataCatalog.get(name).evaluator_type = "pascal_voc"
 
 
-def register_all_voc_style_coco(root):
-    SPLITS = [
-        ("t2_train", "coco17_voc_style"),
-        ("t2_test", "coco17_voc_style"),
-        ("t2_test_unk", "coco17_voc_style"),
-        ("t3_train", "coco17_voc_style"),
-        ("t3_test", "coco17_voc_style"),
-        ("t3_test_unk", "coco17_voc_style"),
-        ("t4_train", "coco17_voc_style"),
-        ("t4_test", "coco17_voc_style"),
-        ("t4_test_unk", "coco17_voc_style"),
-        ("t2_all_test_unk", "coco17_voc_style")
-    ]
-    for name, dirname in SPLITS:
-        year = 2007
-        register_voc_style_coco(name, os.path.join(root, dirname), name, year)
-        MetadataCatalog.get(name).evaluator_type = "pascal_voc"
+# def register_all_voc_style_coco(root):
+#     SPLITS = [
+#         ("t2_train", "coco17_voc_style"),
+#         ("t2_test", "coco17_voc_style"),
+#         ("t2_test_unk", "coco17_voc_style"),
+#         ("t3_train", "coco17_voc_style"),
+#         ("t3_test", "coco17_voc_style"),
+#         ("t3_test_unk", "coco17_voc_style"),
+#         ("t4_train", "coco17_voc_style"),
+#         ("t4_test", "coco17_voc_style"),
+#         ("t4_test_unk", "coco17_voc_style"),
+#         ("t2_all_test_unk", "coco17_voc_style")
+#     ]
+#     for name, dirname in SPLITS:
+#         year = 2007
+#         register_voc_style_coco(name, os.path.join(root, dirname), name, year)
+#         MetadataCatalog.get(name).evaluator_type = "pascal_voc"
 
 
 def register_all_ade20k(root):
@@ -270,5 +279,5 @@ if __name__.endswith(".builtin"):
     # register_all_pascal_voc(_root)
     # register_all_pascal_voc('/home/joseph/workspace/OWOD/datasets')
     register_all_pascal_voc('/home/fk1/workspace/OWOD/datasets')
-    register_all_voc_style_coco('/home/fk1/workspace/OWOD/datasets')
+    # register_all_voc_style_coco('/home/fk1/workspace/OWOD/datasets')
     register_all_ade20k(_root)
