@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import itertools
+import copy
 import logging
 import numpy as np
 import operator
@@ -315,7 +316,7 @@ def label_known_class_and_unknown(cfg, dataset_dicts):
         annos = entry["annotations"]
         for annotation in annos:
             if annotation["category_id"] not in known_classes:
-                annotation["category_id"] = total_num_class
+                annotation["category_id"] = total_num_class - 1
 
     return dataset_dicts
 

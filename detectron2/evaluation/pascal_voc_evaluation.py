@@ -124,6 +124,23 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
         self._logger.info("AP50: " + str(['%.1f' % x for x in aps[50]]))
         self._logger.info("AP75: " + str(['%.1f' % x for x in aps[75]]))
 
+        if self.prev_intro_cls > 0:
+            self._logger.info("Prev class AP__: " + str(np.mean(avg_precs[:self.prev_intro_cls])))
+            self._logger.info("Prev class AP50: " + str(np.mean(aps[50][:self.prev_intro_cls])))
+            self._logger.info("Prev class AP75: " + str(np.mean(aps[75][:self.prev_intro_cls])))
+
+        self._logger.info("Current class AP__: " + str(np.mean(avg_precs[self.prev_intro_cls:self.curr_intro_cls])))
+        self._logger.info("Current class AP50: " + str(np.mean(aps[50][self.prev_intro_cls:self.curr_intro_cls])))
+        self._logger.info("Current class AP75: " + str(np.mean(aps[75][self.prev_intro_cls:self.curr_intro_cls])))
+
+        self._logger.info("Known AP__: " + str(np.mean(avg_precs[:self.prev_intro_cls + self.curr_intro_cls])))
+        self._logger.info("Known AP50: " + str(np.mean(aps[50][:self.prev_intro_cls + self.curr_intro_cls])))
+        self._logger.info("Known AP75: " + str(np.mean(aps[75][:self.prev_intro_cls + self.curr_intro_cls])))
+
+        self._logger.info("Unknown AP__: " + str(avg_precs[-1]))
+        self._logger.info("Unknown AP50: " + str(aps[50][-1]))
+        self._logger.info("Unknown AP75: " + str(aps[75][-1]))
+
         # self._logger.info("R__: " + str(['%.1f' % x for x in list(np.mean([x for _, x in recs.items()], axis=0))]))
         # self._logger.info("R50: " + str(['%.1f' % x for x in recs[50]]))
         # self._logger.info("R75: " + str(['%.1f' % x for x in recs[75]]))

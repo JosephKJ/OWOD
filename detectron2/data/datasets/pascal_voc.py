@@ -6,6 +6,7 @@ import os
 import xml.etree.ElementTree as ET
 from typing import List, Tuple, Union
 from fvcore.common.file_io import PathManager
+import itertools
 
 from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.structures import BoxMode
