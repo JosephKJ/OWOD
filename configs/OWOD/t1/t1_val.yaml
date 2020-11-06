@@ -11,13 +11,13 @@ SOLVER:
   STEPS: (12000, 16000)
   MAX_ITER: 500
   WARMUP_ITERS: 0
-OUTPUT_DIR: "./output/t1_clustering_new_3"
+OUTPUT_DIR: "./output/t1_clustering_new_4"
 OWOD:
   PREV_INTRODUCED_CLS: 0
   CUR_INTRODUCED_CLS: 20
   COMPUTE_ENERGY: True
   ENERGY_SAVE_PATH: 'energy'
-  SKIP_TRAINING_WHILE_EVAL: False
+  SKIP_TRAINING_WHILE_EVAL: True
 
 
 #OUTPUT_DIR: "./output/t1_std_frcnn_energy"

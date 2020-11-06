@@ -9,6 +9,9 @@ import xml.etree.ElementTree as ET
 from collections import OrderedDict, defaultdict
 from functools import lru_cache
 import torch
+from torch.distributions.weibull import Weibull
+from torch.distributions.transforms import AffineTransform
+from torch.distributions.transformed_distribution import TransformedDistribution
 from fvcore.common.file_io import PathManager
 
 from detectron2.data import MetadataCatalog
@@ -46,10 +49,63 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
             self.prev_intro_cls = cfg.OWOD.PREV_INTRODUCED_CLS
             self.curr_intro_cls = cfg.OWOD.CUR_INTRODUCED_CLS
             self.total_num_class = cfg.MODEL.ROI_HEADS.NUM_CLASSES
-            self.known_classes = self._class_names[:self.prev_intro_cls + self.curr_intro_cls]
+            self.unknown_class_index = self.total_num_class - 1
+            self.num_seen_classes = self.prev_intro_cls + self.curr_intro_cls
+            self.known_classes = self._class_names[:self.num_seen_classes]
+
+            param_save_location = os.path.join(cfg.OUTPUT_DIR,'energy_dist_' + str(self.num_seen_classes) + '.pkl')
+
+            if os.path.isfile(param_save_location) and os.access(param_save_location, os.R_OK):
+                self._logger.info('Loading energy distribution from ' + param_save_location)
+                params = torch.load(param_save_location)
+                unknown = params[0]
+                known = params[1]
+                self.unk_dist = self.create_distribution(unknown['scale_unk'], unknown['shape_unk'], unknown['shift_unk'])
+                self.known_dist = self.create_distribution(known['scale_known'], known['shape_known'], known['shift_known'])
+                self.energy_distribution_loaded = True
+            else:
+                self._logger.info('Energy distribution is not found at ' + param_save_location)
+
+
+    def create_distribution(self, scale, shape, shift):
+        wd = Weibull(scale=scale, concentration=shape)
+        transforms = AffineTransform(loc=shift, scale=1.)
+        weibull = TransformedDistribution(wd, transforms)
+        return weibull
+
+    def compute_prob(self, x, distribution):
+        eps_radius = 0.5
+        num_eval_points = 100
+        start_x = x - eps_radius
+        end_x = x + eps_radius
+        step = (end_x - start_x) / num_eval_points
+        dx = torch.linspace(x - eps_radius, x + eps_radius, num_eval_points)
+        pdf = distribution.log_prob(dx).exp()
+        prob = torch.sum(pdf * step)
+        return prob
 
     def reset(self):
         self._predictions = defaultdict(list)  # class name -> list of prediction strings
+
+    def update_label_based_on_energy(self, logits, classes):
+        if not self.energy_distribution_loaded:
+            return classes
+        else:
+            cls = classes
+            lse = torch.logsumexp(logits[:, :self.num_seen_classes], dim=1)
+            for i, energy in enumerate(lse):
+                p_unk = self.compute_prob(energy, self.unk_dist)
+                p_known = self.compute_prob(energy, self.known_dist)
+                if torch.isnan(p_unk) or torch.isnan(p_known):
+                    continue
+                if p_unk <= p_known:
+                    if cls[i] == self.unknown_class_index:
+                        cls[i] = -100
+                else:
+                    if cls[i] != self.unknown_class_index:
+                        # cls[i] = -100
+                        cls[i] = self.unknown_class_index
+            return cls
 
     def process(self, inputs, outputs):
         for input, output in zip(inputs, outputs):
@@ -59,7 +115,10 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
             scores = instances.scores.tolist()
             classes = instances.pred_classes.tolist()
             logits = instances.logits
+            classes = self.update_label_based_on_energy(logits, classes)
             for box, score, cls in zip(boxes, scores, classes):
+                if cls == -100:
+                    continue
                 xmin, ymin, xmax, ymax = box
                 # The inverse of data loading logic in `datasets/pascal_voc.py`
                 xmin += 1

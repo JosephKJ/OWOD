@@ -158,6 +158,7 @@ class TrainerBase:
 
     def before_train(self):
         if self.cfg.OWOD.SKIP_TRAINING_WHILE_EVAL:
+            logger = logging.getLogger(__name__)
             logger.info('Skipping training as cfg.OWOD.SKIP_TRAINING_WHILE_EVAL flag is set.')
         for h in self._hooks:
             h.before_train()
@@ -204,8 +205,8 @@ class TrainerBase:
 
             if id % 100 == 0:
                 logger.info("Analysing " + str(id) + " / " + str(len(files)))
-            if id == 10:
-                break
+            # if id == 10:
+            #     break
 
         logger.info('len(unk): ' + str(len(unk)))
         logger.info('len(known): '+ str(len(known)))
