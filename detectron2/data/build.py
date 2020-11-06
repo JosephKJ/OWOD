@@ -263,7 +263,7 @@ def remove_prev_class_and_unk_instances(cfg, dataset_dicts):
     # For training data.
     prev_intro_cls = cfg.OWOD.PREV_INTRODUCED_CLS
     curr_intro_cls = cfg.OWOD.CUR_INTRODUCED_CLS
-    valid_classes = range(prev_intro_cls, curr_intro_cls)
+    valid_classes = range(prev_intro_cls, prev_intro_cls + curr_intro_cls)
 
     logger = logging.getLogger(__name__)
     logger.info("Valid classes: " + str(valid_classes))

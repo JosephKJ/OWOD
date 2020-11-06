@@ -1,9 +1,10 @@
 _BASE_: "../Base-RCNN-C4-OWOD.yaml"
 MODEL:
-  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+#  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  WEIGHTS: "/home/fk1/workspace/OWOD/output/t1_ENABLE_CLUSTERING/model_final.pth"
 DATASETS:
-  TRAIN: ('t2_train',)
-  TEST: ('voc_2007_test', 't2_test', 't3_test_unk', 't4_test_unk')
+  TRAIN: ('t2_voc_coco_2007_train', ) # t1_voc_coco_2007_train, t1_voc_coco_2007_ft
+  TEST: ('voc_coco_2007_test', )
 SOLVER:
   STEPS: (22000, 26000)
   MAX_ITER: 28000

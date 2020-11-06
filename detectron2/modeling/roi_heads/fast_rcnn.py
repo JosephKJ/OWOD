@@ -47,7 +47,7 @@ Naming convention:
 """
 
 
-def fast_rcnn_inference(boxes, scores, image_shapes, score_thresh, nms_thresh, topk_per_image):
+def fast_rcnn_inference(boxes, scores, image_shapes, predictions, score_thresh, nms_thresh, topk_per_image):
     """
     Call `fast_rcnn_inference_single_image` for all images.
 
@@ -75,15 +75,15 @@ def fast_rcnn_inference(boxes, scores, image_shapes, score_thresh, nms_thresh, t
     """
     result_per_image = [
         fast_rcnn_inference_single_image(
-            boxes_per_image, scores_per_image, image_shape, score_thresh, nms_thresh, topk_per_image
+            boxes_per_image, scores_per_image, image_shape, score_thresh, nms_thresh, topk_per_image, prediction
         )
-        for scores_per_image, boxes_per_image, image_shape in zip(scores, boxes, image_shapes)
+        for scores_per_image, boxes_per_image, image_shape, prediction in zip(scores, boxes, image_shapes, predictions)
     ]
     return [x[0] for x in result_per_image], [x[1] for x in result_per_image]
 
 
 def fast_rcnn_inference_single_image(
-    boxes, scores, image_shape, score_thresh, nms_thresh, topk_per_image
+    boxes, scores, image_shape, score_thresh, nms_thresh, topk_per_image, prediction
 ):
     """
     Single-image inference. Return bounding-box detection results by thresholding
@@ -96,12 +96,15 @@ def fast_rcnn_inference_single_image(
     Returns:
         Same as `fast_rcnn_inference`, but for only one image.
     """
+    logits = prediction
     valid_mask = torch.isfinite(boxes).all(dim=1) & torch.isfinite(scores).all(dim=1)
     if not valid_mask.all():
         boxes = boxes[valid_mask]
         scores = scores[valid_mask]
+        logits = logits[valid_mask]
 
     scores = scores[:, :-1]
+    logits = logits[:, :-1]
     num_bbox_reg_classes = boxes.shape[1] // 4
     # Convert to Boxes to use the `clip` function ...
     boxes = Boxes(boxes.reshape(-1, 4))
@@ -119,17 +122,20 @@ def fast_rcnn_inference_single_image(
     else:
         boxes = boxes[filter_mask]
     scores = scores[filter_mask]
+    logits = logits[filter_inds[:,0]]
 
     # 2. Apply NMS for each class independently.
     keep = batched_nms(boxes, scores, filter_inds[:, 1], nms_thresh)
     if topk_per_image >= 0:
         keep = keep[:topk_per_image]
     boxes, scores, filter_inds = boxes[keep], scores[keep], filter_inds[keep]
+    logits = logits[keep]
 
     result = Instances(image_shape)
     result.pred_boxes = Boxes(boxes)
     result.scores = scores
     result.pred_classes = filter_inds[:, 1]
+    result.logits = logits
     return result, filter_inds[:, 0]
 
 
@@ -734,6 +740,7 @@ class FastRCNNOutputLayers(nn.Module):
             boxes,
             scores,
             image_shapes,
+            predictions,
             self.test_score_thresh,
             self.test_nms_thresh,
             self.test_topk_per_image,

@@ -613,6 +613,9 @@ _C.OWOD.CLUSTERING.Z_DIMENSION = 64
 
 _C.OWOD.PREV_INTRODUCED_CLS = 0
 _C.OWOD.CUR_INTRODUCED_CLS = 20
+_C.OWOD.COMPUTE_ENERGY = False
+_C.OWOD.ENERGY_SAVE_PATH = ''
+_C.OWOD.SKIP_TRAINING_WHILE_EVAL = False
 
 # ---------------------------------------------------------------------------- #
 # Misc options

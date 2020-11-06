@@ -46,6 +46,7 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
             self.prev_intro_cls = cfg.OWOD.PREV_INTRODUCED_CLS
             self.curr_intro_cls = cfg.OWOD.CUR_INTRODUCED_CLS
             self.total_num_class = cfg.MODEL.ROI_HEADS.NUM_CLASSES
+            self.known_classes = self._class_names[:self.prev_intro_cls + self.curr_intro_cls]
 
     def reset(self):
         self._predictions = defaultdict(list)  # class name -> list of prediction strings
@@ -57,6 +58,7 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
             boxes = instances.pred_boxes.tensor.numpy()
             scores = instances.scores.tolist()
             classes = instances.pred_classes.tolist()
+            logits = instances.logits
             for box, score, cls in zip(boxes, scores, classes):
                 xmin, ymin, xmax, ymax = box
                 # The inverse of data loading logic in `datasets/pascal_voc.py`
@@ -108,6 +110,7 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
                         cls_name,
                         ovthresh=thresh / 100.0,
                         use_07_metric=self._is_2007,
+                        known_classes=self.known_classes
                     )
                     aps[thresh].append(ap * 100)
                     # recs[thresh].append(rec * 100)
@@ -166,14 +169,27 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
 
 
 @lru_cache(maxsize=None)
-def parse_rec(filename):
+def parse_rec(filename, known_classes):
     """Parse a PASCAL VOC xml file."""
+    VOC_CLASS_NAMES_COCOFIED = [
+        "airplane", "dining table", "motorcycle",
+        "potted plant", "couch", "tv"
+    ]
+    BASE_VOC_CLASS_NAMES = [
+        "aeroplane", "diningtable", "motorbike",
+        "pottedplant", "sofa", "tvmonitor"
+    ]
     with PathManager.open(filename) as f:
         tree = ET.parse(f)
     objects = []
     for obj in tree.findall("object"):
         obj_struct = {}
-        obj_struct["name"] = obj.find("name").text
+        cls_name = obj.find("name").text
+        if cls_name in VOC_CLASS_NAMES_COCOFIED:
+            cls_name = BASE_VOC_CLASS_NAMES[VOC_CLASS_NAMES_COCOFIED.index(cls_name)]
+        if cls_name not in known_classes:
+            cls_name = 'unknown'
+        obj_struct["name"] = cls_name
         # obj_struct["pose"] = obj.find("pose").text
         # obj_struct["truncated"] = int(obj.find("truncated").text)
         obj_struct["difficult"] = int(obj.find("difficult").text)
@@ -221,7 +237,7 @@ def voc_ap(rec, prec, use_07_metric=False):
     return ap
 
 
-def voc_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_metric=False):
+def voc_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_metric=False, known_classes=None):
     """rec, prec, ap = voc_eval(detpath,
                                 annopath,
                                 imagesetfile,
@@ -254,7 +270,7 @@ def voc_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_me
     # load annots
     recs = {}
     for imagename in imagenames:
-        recs[imagename] = parse_rec(annopath.format(imagename))
+        recs[imagename] = parse_rec(annopath.format(imagename), tuple(known_classes))
 
     # extract gt objects for this class
     class_recs = {}

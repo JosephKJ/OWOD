@@ -3,6 +3,8 @@ import inspect
 import logging
 import numpy as np
 import heapq
+import os
+import shortuuid
 import operator
 import shortuuid
 from typing import Dict, List, Optional, Tuple, Union
@@ -385,6 +387,8 @@ class Res5ROIHeads(ROIHeads):
         sampling_ratio    = cfg.MODEL.ROI_BOX_HEAD.POOLER_SAMPLING_RATIO
         self.mask_on      = cfg.MODEL.MASK_ON
         self.enable_clustering = cfg.OWOD.ENABLE_CLUSTERING
+        self.compute_energy_flag = cfg.OWOD.COMPUTE_ENERGY
+        self.energy_save_path = os.path.join(cfg.OUTPUT_DIR, cfg.OWOD.ENERGY_SAVE_PATH)
         # fmt: on
         assert not cfg.MODEL.KEYPOINT_ON
         assert len(self.in_features) == 1
@@ -443,6 +447,13 @@ class Res5ROIHeads(ROIHeads):
         location = '/home/fk1/workspace/OWOD/output/features/' + shortuuid.uuid() + '.pkl'
         torch.save(data, location)
 
+    def compute_energy(self, predictions, proposals):
+        gt_classes = torch.cat([p.gt_classes for p in proposals])
+        logits = predictions[0]
+        data = (logits, gt_classes)
+        location = os.path.join(self.energy_save_path, shortuuid.uuid() + '.pkl')
+        torch.save(data, location)
+
     def forward(self, images, features, proposals, targets=None):
         """
         See :meth:`ROIHeads.forward`.
@@ -466,6 +477,8 @@ class Res5ROIHeads(ROIHeads):
             if self.enable_clustering:
                 self.box_predictor.update_feature_store(input_features, proposals)
             del features
+            if self.compute_energy_flag:
+                self.compute_energy(predictions, proposals)
             losses = self.box_predictor.losses(predictions, proposals, input_features)
             if self.mask_on:
                 proposals, fg_selection_masks = select_foreground_proposals(
