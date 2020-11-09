@@ -121,6 +121,9 @@ def default_setup(cfg, args):
         if cfg.OWOD.COMPUTE_ENERGY:
             PathManager.mkdirs(os.path.join(output_dir, cfg.OWOD.ENERGY_SAVE_PATH))
 
+        if cfg.OWOD.ENABLE_CLUSTERING:
+            PathManager.mkdirs(os.path.join(output_dir, cfg.OWOD.FEATURE_STORE_SAVE_PATH))
+
     rank = comm.get_rank()
     setup_logger(output_dir, distributed_rank=rank, name="fvcore")
     logger = setup_logger(output_dir, distributed_rank=rank)

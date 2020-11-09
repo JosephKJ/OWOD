@@ -2,6 +2,7 @@
 import logging
 from typing import Dict, Union
 import torch
+import os
 import math
 import shortuuid
 from fvcore.nn import giou_loss, smooth_l1_loss
@@ -414,6 +415,9 @@ class FastRCNNOutputLayers(nn.Module):
         enable_clustering,
         prev_intro_cls,
         curr_intro_cls,
+        max_iterations,
+        output_dir,
+        feat_store_path,
         num_classes: int,
         test_score_thresh: float = 0.0,
         test_nms_thresh: float = 0.5,
@@ -472,9 +476,6 @@ class FastRCNNOutputLayers(nn.Module):
         self.clustering_update_mu_iter = clustering_update_mu_iter
         self.clustering_momentum = clustering_momentum
 
-        self.feature_store = Store(num_classes + 1, clustering_items_per_class)
-        self.means = [None for _ in range(num_classes + 1)]
-
         self.hingeloss = nn.HingeEmbeddingLoss(2)
         self.enable_clustering = enable_clustering
 
@@ -483,6 +484,22 @@ class FastRCNNOutputLayers(nn.Module):
         self.seen_classes = self.prev_intro_cls + self.curr_intro_cls
         self.invalid_class_range = list(range(self.seen_classes, self.num_classes-1))
         logging.getLogger(__name__).info("Invalid class range: " + str(self.invalid_class_range))
+
+        self.max_iterations = max_iterations
+        self.feature_store_is_stored = False
+        self.output_dir = output_dir
+        self.feat_store_path = feat_store_path
+        self.feature_store_save_loc = os.path.join(self.output_dir, self.feat_store_path, 'feat.pt')
+
+        if os.path.isfile(self.feature_store_save_loc):
+            self.feature_store = torch.load(self.feature_store_save_loc)
+            logging.getLogger(__name__).info('Loaded feature store from ' + self.feature_store_save_loc)
+        else:
+            logging.getLogger(__name__).info('Feature store not found in ' +
+                                             self.feature_store_save_loc + '. Creating new feature store.')
+            self.feature_store = Store(num_classes + 1, clustering_items_per_class)
+        self.means = [None for _ in range(num_classes + 1)]
+
 
         # self.ae_model = AE(input_size, clustering_z_dimension)
         # self.ae_model.apply(Xavier)
@@ -508,7 +525,10 @@ class FastRCNNOutputLayers(nn.Module):
             "clustering_z_dimension": cfg.OWOD.CLUSTERING.Z_DIMENSION,
             "enable_clustering"     : cfg.OWOD.ENABLE_CLUSTERING,
             "prev_intro_cls"        : cfg.OWOD.PREV_INTRODUCED_CLS,
-            "curr_intro_cls"        : cfg.OWOD.CUR_INTRODUCED_CLS
+            "curr_intro_cls"        : cfg.OWOD.CUR_INTRODUCED_CLS,
+            "max_iterations"        : cfg.SOLVER.MAX_ITER,
+            "output_dir"            : cfg.OUTPUT_DIR,
+            "feat_store_path"       : cfg.OWOD.FEATURE_STORE_SAVE_PATH,
             # fmt: on
         }
 
@@ -536,75 +556,16 @@ class FastRCNNOutputLayers(nn.Module):
         gt_classes = torch.cat([p.gt_classes for p in proposals])
         self.feature_store.add(features, gt_classes)
 
+        storage = get_event_storage()
+
+        if storage.iter == self.max_iterations and self.feature_store_is_stored is False:
+            logging.getLogger(__name__).info('Saving image store at iteration ' + str(storage.iter) + ' to ' + self.feature_store_save_loc)
+            torch.save(self.feature_store, self.feature_store_save_loc)
+            self.feature_store_is_stored = True
+
         # self.feature_store.add(F.normalize(features, dim=0), gt_classes)
         # self.feature_store.add(self.ae_model.encoder(features), gt_classes)
 
-    # def clstr_loss(self, input_features, proposals):
-    #     """
-    #     Get the foreground input_features, generate distributions for the class,
-    #     get probability of each feature from each distribution;
-    #     Compute loss: if belonging to a class -> likelihood should be higher
-    #                   else -> lower
-    #     :param input_features:
-    #     :param proposals:
-    #     :return:
-    #     """
-    #     loss = 0
-    #     gt_classes = torch.cat([p.gt_classes for p in proposals])
-    #     mask = gt_classes != self.num_classes
-    #     fg_features = input_features[mask]
-    #     classes = gt_classes[mask]
-    #     # fg_features = self.ae_model.encoder(fg_features)
-    #
-    #     # Distribution per class
-    #     log_prob = [None for _ in range(self.num_classes + 1)]
-    #     # https://github.com/pytorch/pytorch/issues/23780
-    #     for cls_index, mu in enumerate(self.means):
-    #         if mu is not None:
-    #             dist = Normal(loc=mu.cuda(), scale=torch.ones_like(mu.cuda()))
-    #             log_prob[cls_index] = dist.log_prob(fg_features).mean(dim=1)
-    #             # log_prob[cls_index] = torch.distributions.multivariate_normal. \
-    #             #     MultivariateNormal(mu.cuda(), torch.eye(len(mu)).cuda()).log_prob(fg_features)
-    #                 # MultivariateNormal(mu, torch.eye(len(mu))).log_prob(fg_features.cpu())
-    #             #                     MultivariateNormal(mu[:2], torch.eye(len(mu[:2]))).log_prob(fg_features[:,:2].cpu())
-    #         else:
-    #             log_prob[cls_index] = torch.zeros((len(fg_features))).cuda()
-    #
-    #     log_prob = torch.stack(log_prob).T # num_of_fg_proposals x num_of_classes
-    #     for i, p in enumerate(log_prob):
-    #         weight = torch.ones_like(p) * -1
-    #         weight[classes[i]] = 1
-    #         p = p * weight
-    #         loss += p.mean()
-    #     return loss
-
-    # def clstr_loss_l2(self, input_features, proposals):
-    #     """
-    #     Get the foreground input_features, generate distributions for the class,
-    #     get probability of each feature from each distribution;
-    #     Compute loss: if belonging to a class -> likelihood should be higher
-    #                   else -> lower
-    #     :param input_features:
-    #     :param proposals:
-    #     :return:
-    #     """
-    #     loss = 0
-    #     gt_classes = torch.cat([p.gt_classes for p in proposals])
-    #     mask = gt_classes != self.num_classes
-    #     fg_features = input_features[mask]
-    #     classes = gt_classes[mask]
-    #     fg_features = self.ae_model.encoder(fg_features)
-    #
-    #     for index, feature in enumerate(fg_features):
-    #         for cls_index, mu in enumerate(self.means):
-    #             if mu is not None and feature is not None:
-    #                 mu = mu.cuda()
-    #                 if  classes[index] ==  cls_index:
-    #                     loss -= F.mse_loss(feature, mu)
-    #                 else:
-    #                     loss += F.mse_loss(feature, mu)
-    #
-    #     return loss
 
     def clstr_loss_l2_cdist(self, input_features, proposals):
         """
@@ -822,3 +783,70 @@ class FastRCNNOutputLayers(nn.Module):
         num_inst_per_image = [len(p) for p in proposals]
         probs = F.softmax(scores, dim=-1)
         return probs.split(num_inst_per_image, dim=0)
+
+    # def clstr_loss(self, input_features, proposals):
+    #     """
+    #     Get the foreground input_features, generate distributions for the class,
+    #     get probability of each feature from each distribution;
+    #     Compute loss: if belonging to a class -> likelihood should be higher
+    #                   else -> lower
+    #     :param input_features:
+    #     :param proposals:
+    #     :return:
+    #     """
+    #     loss = 0
+    #     gt_classes = torch.cat([p.gt_classes for p in proposals])
+    #     mask = gt_classes != self.num_classes
+    #     fg_features = input_features[mask]
+    #     classes = gt_classes[mask]
+    #     # fg_features = self.ae_model.encoder(fg_features)
+    #
+    #     # Distribution per class
+    #     log_prob = [None for _ in range(self.num_classes + 1)]
+    #     # https://github.com/pytorch/pytorch/issues/23780
+    #     for cls_index, mu in enumerate(self.means):
+    #         if mu is not None:
+    #             dist = Normal(loc=mu.cuda(), scale=torch.ones_like(mu.cuda()))
+    #             log_prob[cls_index] = dist.log_prob(fg_features).mean(dim=1)
+    #             # log_prob[cls_index] = torch.distributions.multivariate_normal. \
+    #             #     MultivariateNormal(mu.cuda(), torch.eye(len(mu)).cuda()).log_prob(fg_features)
+    #                 # MultivariateNormal(mu, torch.eye(len(mu))).log_prob(fg_features.cpu())
+    #             #                     MultivariateNormal(mu[:2], torch.eye(len(mu[:2]))).log_prob(fg_features[:,:2].cpu())
+    #         else:
+    #             log_prob[cls_index] = torch.zeros((len(fg_features))).cuda()
+    #
+    #     log_prob = torch.stack(log_prob).T # num_of_fg_proposals x num_of_classes
+    #     for i, p in enumerate(log_prob):
+    #         weight = torch.ones_like(p) * -1
+    #         weight[classes[i]] = 1
+    #         p = p * weight
+    #         loss += p.mean()
+    #     return loss
+
+    # def clstr_loss_l2(self, input_features, proposals):
+    #     """
+    #     Get the foreground input_features, generate distributions for the class,
+    #     get probability of each feature from each distribution;
+    #     Compute loss: if belonging to a class -> likelihood should be higher
+    #                   else -> lower
+    #     :param input_features:
+    #     :param proposals:
+    #     :return:
+    #     """
+    #     loss = 0
+    #     gt_classes = torch.cat([p.gt_classes for p in proposals])
+    #     mask = gt_classes != self.num_classes
+    #     fg_features = input_features[mask]
+    #     classes = gt_classes[mask]
+    #     fg_features = self.ae_model.encoder(fg_features)
+    #
+    #     for index, feature in enumerate(fg_features):
+    #         for cls_index, mu in enumerate(self.means):
+    #             if mu is not None and feature is not None:
+    #                 mu = mu.cuda()
+    #                 if  classes[index] ==  cls_index:
+    #                     loss -= F.mse_loss(feature, mu)
+    #                 else:
+    #                     loss += F.mse_loss(feature, mu)
+    #
+    #     return loss

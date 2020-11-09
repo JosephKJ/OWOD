@@ -215,6 +215,7 @@ def register_all_pascal_voc(root):
         ("voc_2012_train", "VOC2012", "train"),
         ("voc_2012_val", "VOC2012", "val"),
         ("t1_voc_coco_2007_train", "VOC2007", "t1_train"),
+        ("t1_voc_coco_2007_known_test", "VOC2007", "t1_known_test"),
         ("voc_coco_2007_test", "VOC2007", "all_task_test"),
         ("voc_coco_2007_val", "VOC2007", "all_task_val"),
         ("t1_voc_coco_2007_ft", "VOC2007", "t1_ft"),

@@ -616,6 +616,7 @@ _C.OWOD.CUR_INTRODUCED_CLS = 20
 _C.OWOD.COMPUTE_ENERGY = False
 _C.OWOD.ENERGY_SAVE_PATH = ''
 _C.OWOD.SKIP_TRAINING_WHILE_EVAL = False
+_C.OWOD.FEATURE_STORE_SAVE_PATH = ''
 
 # ---------------------------------------------------------------------------- #
 # Misc options
