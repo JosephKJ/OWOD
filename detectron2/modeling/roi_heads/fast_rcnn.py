@@ -10,6 +10,7 @@ from torch import nn
 from torch.nn import functional as F
 from torch.distributions.normal import Normal
 
+import detectron2.utils.comm as comm
 from detectron2.config import configurable
 from detectron2.layers import Linear, ShapeSpec, batched_nms, cat, nonzero_tuple
 from detectron2.modeling.box_regression import Box2BoxTransform
@@ -492,8 +493,8 @@ class FastRCNNOutputLayers(nn.Module):
         self.feature_store_save_loc = os.path.join(self.output_dir, self.feat_store_path, 'feat.pt')
 
         if os.path.isfile(self.feature_store_save_loc):
+            logging.getLogger(__name__).info('Trying to load feature store from ' + self.feature_store_save_loc)
             self.feature_store = torch.load(self.feature_store_save_loc)
-            logging.getLogger(__name__).info('Loaded feature store from ' + self.feature_store_save_loc)
         else:
             logging.getLogger(__name__).info('Feature store not found in ' +
                                              self.feature_store_save_loc + '. Creating new feature store.')
@@ -558,7 +559,7 @@ class FastRCNNOutputLayers(nn.Module):
 
         storage = get_event_storage()
 
-        if storage.iter == self.max_iterations and self.feature_store_is_stored is False:
+        if storage.iter == self.max_iterations-1 and self.feature_store_is_stored is False and comm.is_main_process():
             logging.getLogger(__name__).info('Saving image store at iteration ' + str(storage.iter) + ' to ' + self.feature_store_save_loc)
             torch.save(self.feature_store, self.feature_store_save_loc)
             self.feature_store_is_stored = True

@@ -1,0 +1,25 @@
+_BASE_: "../../Base-RCNN-C4-OWOD.yaml"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+#  WEIGHTS: "/home/fk1/workspace/OWOD/output/iOD/all_20/model_final.pth"
+  ROI_HEADS:
+    #    NUM_CLASSES: 21 # 0-19 Known class; 20 -> Unknown; 21 -> Background.
+    NUM_CLASSES: 21
+    POSITIVE_FRACTION: 0.25
+    NMS_THRESH_TEST: 0.4
+  ROI_BOX_HEAD:
+    CLS_AGNOSTIC_BBOX_REG: True
+DATASETS:
+  TRAIN: ('voc_2007_trainval', )
+  TEST: ('voc_2007_test', )
+SOLVER:
+  STEPS: (12000, 16000)
+  MAX_ITER: 18000
+  WARMUP_ITERS: 100
+OUTPUT_DIR: "./output/iOD/all_20"
+OWOD:
+  ENABLE_THRESHOLD_AUTOLABEL_UNK: False
+  ENABLE_CLUSTERING: False
+  PREV_INTRODUCED_CLS: 0
+  CUR_INTRODUCED_CLS: 20
+SEED: 9999

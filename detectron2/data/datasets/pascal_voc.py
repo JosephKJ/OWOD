@@ -124,10 +124,11 @@ def load_voc_instances(dirname: str, split: str, class_names: Union[List[str], T
 
 
 def register_pascal_voc(name, dirname, split, year):
-    if "voc_coco" in name:
-        class_names = VOC_COCO_CLASS_NAMES
-    else:
-        class_names = tuple(VOC_CLASS_NAMES)
+    # if "voc_coco" in name:
+    #     class_names = VOC_COCO_CLASS_NAMES
+    # else:
+    #     class_names = tuple(VOC_CLASS_NAMES)
+    class_names = VOC_COCO_CLASS_NAMES
     DatasetCatalog.register(name, lambda: load_voc_instances(dirname, split, class_names))
     MetadataCatalog.get(name).set(
         thing_classes=list(class_names), dirname=dirname, year=year, split=split

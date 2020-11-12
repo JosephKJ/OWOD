@@ -1,0 +1,17 @@
+_BASE_: "../../Base-RCNN-C4-OWOD.yaml"
+MODEL:
+  WEIGHTS: "/home/fk1/workspace/OWOD/output/t3_ft_baseline/model_final.pth"
+DATASETS:
+  TRAIN: ('t3_voc_coco_2007_ft', )
+  TEST: ('voc_coco_2007_test', )
+SOLVER:
+  STEPS: (110000, 112000)
+  MAX_ITER: 116500
+  WARMUP_ITERS: 0
+OUTPUT_DIR: "./output/t3_ft_baseline"
+OWOD:
+  PREV_INTRODUCED_CLS: 40
+  CUR_INTRODUCED_CLS: 20
+  ENABLE_CLUSTERING: False
+  CLUSTERING:
+    START_ITER: 74000

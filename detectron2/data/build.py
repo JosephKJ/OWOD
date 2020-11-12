@@ -197,6 +197,8 @@ def print_instances_class_histogram(dataset_dicts, class_names):
         + colored(table, "cyan"),
         key="message",
     )
+    logger = logging.getLogger(__name__)
+    logger.info("Number of datapoints: " + str(len(dataset_dicts)))
 
 
 def get_detection_dataset_dicts(
@@ -238,15 +240,15 @@ def get_detection_dataset_dicts(
         dataset_dicts = filter_images_with_few_keypoints(dataset_dicts, min_keypoints)
 
     d_name = dataset_names[0]
-    if 'voc_coco' in d_name:
-        if 'train' in d_name:
-            dataset_dicts = remove_prev_class_and_unk_instances(cfg, dataset_dicts)
-        elif 'test' in d_name:
-            dataset_dicts = label_known_class_and_unknown(cfg, dataset_dicts)
-        elif 'val' in d_name:
-            dataset_dicts = label_known_class_and_unknown(cfg, dataset_dicts)
-        elif 'ft' in d_name:
-            dataset_dicts = remove_unknown_instances(cfg, dataset_dicts)
+    # if 'voc_coco' in d_name:
+    if 'train' in d_name:
+        dataset_dicts = remove_prev_class_and_unk_instances(cfg, dataset_dicts)
+    elif 'test' in d_name:
+        dataset_dicts = label_known_class_and_unknown(cfg, dataset_dicts)
+    elif 'val' in d_name:
+        dataset_dicts = label_known_class_and_unknown(cfg, dataset_dicts)
+    elif 'ft' in d_name:
+        dataset_dicts = remove_unknown_instances(cfg, dataset_dicts)
 
     if has_instances:
         try:

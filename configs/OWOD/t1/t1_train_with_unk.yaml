@@ -1,0 +1,16 @@
+_BASE_: "../../Base-RCNN-C4-OWOD.yaml"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+DATASETS:
+  TRAIN: ('t1_voc_coco_2007_val_with_known_and_unk', ) # t1_voc_coco_2007_train, t1_voc_coco_2007_ft
+  TEST: ('voc_coco_2007_test', )   # voc_coco_2007_test, t1_voc_coco_2007_test, t1_voc_coco_2007_val
+SOLVER:
+  STEPS: (12000, 16000)
+  MAX_ITER: 18000
+  WARMUP_ITERS: 100
+OUTPUT_DIR: "./output/t1_train_with_known_and_unk"
+OWOD:
+  PREV_INTRODUCED_CLS: 0
+  CUR_INTRODUCED_CLS: 20
+  ENABLE_CLUSTERING: False
+  ENABLE_THRESHOLD_AUTOLABEL_UNK: False

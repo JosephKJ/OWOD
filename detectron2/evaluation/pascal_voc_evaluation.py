@@ -130,20 +130,20 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
                     f"{image_id} {score:.3f} {xmin:.1f} {ymin:.1f} {xmax:.1f} {ymax:.1f}"
                 )
 
-    def compute_avg_precision_at_many_recall_level(self, precisions, recalls):
+    def compute_avg_precision_at_many_recall_level_for_unk(self, precisions, recalls):
         precs = {}
         for r in range(1, 10):
             r = r/10
-            p = self.compute_avg_precision_at_a_recall_level(precisions, recalls, recall_level=r)
+            p = self.compute_avg_precision_at_a_recall_level_for_unk(precisions, recalls, recall_level=r)
             precs[r] = p
         return precs
 
-    def compute_avg_precision_at_a_recall_level(self, precisions, recalls, recall_level=0.5):
+    def compute_avg_precision_at_a_recall_level_for_unk(self, precisions, recalls, recall_level=0.5):
         precs = {}
         for iou, recall in recalls.items():
             prec = []
             for cls_id, rec in enumerate(recall):
-                if cls_id in range(self.num_seen_classes) and len(rec)>0:
+                if cls_id == self.unknown_class_index and len(rec)>0:
                     p = precisions[iou][cls_id][min(range(len(rec)), key=lambda i: abs(rec[i] - recall_level))]
                     prec.append(p)
             if len(prec) > 0:
@@ -151,6 +151,32 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
             else:
                 precs[iou] = 0
         return precs
+
+    def compute_WI_at_many_recall_level(self, recalls, tp_plus_fp_cs, fp_os):
+        wi_at_recall = {}
+        for r in range(1, 10):
+            r = r/10
+            wi = self.compute_WI_at_a_recall_level(recalls, tp_plus_fp_cs, fp_os, recall_level=r)
+            wi_at_recall[r] = wi
+        return wi_at_recall
+
+    def compute_WI_at_a_recall_level(self, recalls, tp_plus_fp_cs, fp_os, recall_level=0.5):
+        wi_at_iou = {}
+        for iou, recall in recalls.items():
+            tp_plus_fps = []
+            fps = []
+            for cls_id, rec in enumerate(recall):
+                if cls_id in range(self.num_seen_classes) and len(rec) > 0:
+                    index = min(range(len(rec)), key=lambda i: abs(rec[i] - recall_level))
+                    tp_plus_fp = tp_plus_fp_cs[iou][cls_id][index]
+                    tp_plus_fps.append(tp_plus_fp)
+                    fp = fp_os[iou][cls_id][index]
+                    fps.append(fp)
+            if len(tp_plus_fps) > 0:
+                wi_at_iou[iou] = np.mean(fps) / np.mean(tp_plus_fps)
+            else:
+                wi_at_iou[iou] = 0
+        return wi_at_iou
 
     def evaluate(self):
         """
@@ -183,6 +209,8 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
             all_precs = defaultdict(list)
             unk_det_as_knowns = defaultdict(list)
             num_unks = defaultdict(list)
+            tp_plus_fp_cs = defaultdict(list)
+            fp_os = defaultdict(list)
 
             for cls_id, cls_name in enumerate(self._class_names):
                 lines = predictions.get(cls_id, [""])
@@ -192,7 +220,7 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
 
                 # for thresh in range(50, 100, 5):
                 thresh = 50
-                rec, prec, ap, unk_det_as_known, num_unk = voc_eval(
+                rec, prec, ap, unk_det_as_known, num_unk, tp_plus_fp_closed_set, fp_open_set = voc_eval(
                     res_file_template,
                     self._anno_file_template,
                     self._image_set_path,
@@ -206,6 +234,8 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
                 num_unks[thresh].append(num_unk)
                 all_precs[thresh].append(prec)
                 all_recs[thresh].append(rec)
+                tp_plus_fp_cs[thresh].append(tp_plus_fp_closed_set)
+                fp_os[thresh].append(fp_open_set)
                 try:
                     recs[thresh].append(rec[-1] * 100)
                     precs[thresh].append(prec[-1] * 100)
@@ -213,8 +243,11 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
                     recs[thresh].append(0)
                     precs[thresh].append(0)
 
-        avg_precision = self.compute_avg_precision_at_many_recall_level(all_precs, all_recs)
-        self._logger.info('avg_precision: ' + str(avg_precision))
+        wi = self.compute_WI_at_many_recall_level(all_recs, tp_plus_fp_cs, fp_os)
+        self._logger.info('Wilderness Impact: ' + str(wi))
+
+        avg_precision_unk = self.compute_avg_precision_at_many_recall_level_for_unk(all_precs, all_recs)
+        self._logger.info('avg_precision: ' + str(avg_precision_unk))
 
         ret = OrderedDict()
         mAP = {iou: np.mean(x) for iou, x in aps.items()}
@@ -478,14 +511,11 @@ def voc_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_me
     # print('fp: ')
     # print(fp)
 
-
     '''
-    Computing Open-Set Error (OSE)
-    ==============================
-    
-    OSE = # of unknown objects classified as known objects of class 'classname'
-          --------------------------------------------------------------------
-                                    # of unknown objects
+    Computing Absolute Open-Set Error (A-OSE) and Wilderness Impact (WI)
+                                    ===========    
+    Absolute OSE = # of unknown objects classified as known objects of class 'classname'
+    WI = FP_openset / (TP_closed_set + FP_closed_set)
     '''
     logger = logging.getLogger(__name__)
 
@@ -501,7 +531,7 @@ def voc_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_me
         unknown_class_recs[imagename] = {"bbox": bbox, "difficult": difficult, "det": det}
 
     if classname == 'unknown':
-        return rec, prec, ap, 0, n_unk
+        return rec, prec, ap, 0, n_unk, None, None
 
     # Go down each detection and see if it has an overlap with an unknown object.
     # If so, it is an unknown object that was classified as known.
@@ -537,13 +567,16 @@ def voc_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_me
         if ovmax > ovthresh:
             is_unk[d] = 1.0
 
-    is_unk = np.sum(is_unk)
+    is_unk_sum = np.sum(is_unk)
     # OSE = is_unk / n_unk
     # logger.info('Number of unknowns detected knowns (for class '+ classname + ') is ' + str(is_unk))
     # logger.info("Num of unknown instances: " + str(n_unk))
     # logger.info('OSE: ' + str(OSE))
 
-    return rec, prec, ap, is_unk, n_unk
+    tp_plus_fp_closed_set = tp+fp
+    fp_open_set = np.cumsum(is_unk)
+
+    return rec, prec, ap, is_unk_sum, n_unk, tp_plus_fp_closed_set, fp_open_set
 
 
 def plot_pr_curve(precision, recall, filename, base_path='/home/fk1/workspace/OWOD/output/plots/'):
