@@ -7,6 +7,7 @@ import xml.etree.ElementTree as ET
 from typing import List, Tuple, Union
 from fvcore.common.file_io import PathManager
 import itertools
+import logging
 
 from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.structures import BoxMode
@@ -44,7 +45,7 @@ VOC_CLASS_NAMES = [
 ]
 
 T2_CLASS_NAMES = [
-    "truck", "traffic light", "fire hydrant", "stop sign", "parking meter",
+    "?", "traffic light", "fire hydrant", "stop sign", "parking meter",
     "bench", "elephant", "bear", "zebra", "giraffe",
     "backpack", "umbrella", "handbag", "tie", "suitcase",
     "microwave", "oven", "toaster", "sink", "refrigerator"
@@ -87,8 +88,13 @@ def load_voc_instances(dirname: str, split: str, class_names: Union[List[str], T
         anno_file = os.path.join(annotation_dirname, fileid + ".xml")
         jpeg_file = os.path.join(dirname, "JPEGImages", fileid + ".jpg")
 
-        with PathManager.open(anno_file) as f:
-            tree = ET.parse(f)
+        try:
+            with PathManager.open(anno_file) as f:
+                tree = ET.parse(f)
+        except:
+            logger = logging.getLogger(__name__)
+            logger.info('Not able to load: ' + anno_file + '. Continuing without aboarting...')
+            continue
 
         r = {
             "file_name": jpeg_file,

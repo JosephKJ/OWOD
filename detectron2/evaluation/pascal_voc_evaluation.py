@@ -328,8 +328,14 @@ def parse_rec(filename, known_classes):
         "aeroplane", "diningtable", "motorbike",
         "pottedplant", "sofa", "tvmonitor"
     ]
-    with PathManager.open(filename) as f:
-        tree = ET.parse(f)
+    try:
+        with PathManager.open(filename) as f:
+            tree = ET.parse(f)
+    except:
+        logger = logging.getLogger(__name__)
+        logger.info('Not able to load: ' + filename + '. Continuing without aboarting...')
+        return None
+
     objects = []
     for obj in tree.findall("object"):
         obj_struct = {}
@@ -416,10 +422,16 @@ def voc_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_me
         lines = f.readlines()
     imagenames = [x.strip() for x in lines]
 
+    imagenames_filtered = []
     # load annots
     recs = {}
     for imagename in imagenames:
-        recs[imagename] = parse_rec(annopath.format(imagename), tuple(known_classes))
+        rec = parse_rec(annopath.format(imagename), tuple(known_classes))
+        if rec is not None:
+            recs[imagename] = rec
+            imagenames_filtered.append(imagename)
+
+    imagenames = imagenames_filtered
 
     # extract gt objects for this class
     class_recs = {}

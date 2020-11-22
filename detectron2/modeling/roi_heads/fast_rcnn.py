@@ -618,7 +618,7 @@ class FastRCNNOutputLayers(nn.Module):
 
         storage = get_event_storage()
         c_loss = 0
-        if storage.iter == self.clustering_start_iter :
+        if storage.iter == self.clustering_start_iter:
             items = self.feature_store.retrieve(-1)
             for index, item in enumerate(items):
                 if len(item) == 0:

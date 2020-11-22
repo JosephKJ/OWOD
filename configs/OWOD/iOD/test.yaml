@@ -1,25 +1,29 @@
-_BASE_: "../../../Base-RCNN-C4-OWOD.yaml"
+_BASE_: "../../Base-RCNN-C4-OWOD.yaml"
 MODEL:
 #  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
-  WEIGHTS: "/home/fk1/workspace/OWOD/output/iOD/10_p_10/model_0009999.pth"
+#  WEIGHTS: "/home/fk1/workspace/OWOD/output/iOD/base_19/model_final.pth"
+  WEIGHTS: "/home/fk1/workspace/OWOD/output/iOD/10_p_10_ft/model_0024999.pth"
+#  WEIGHTS: "/home/fk1/workspace/OWOD/output/iOD/base_10/model_final.pth"
   ROI_HEADS:
     #    NUM_CLASSES: 21 # 0-19 Known class; 20 -> Unknown; 21 -> Background.
     NUM_CLASSES: 21
+#    NMS_THRESH_TEST: 0.2
+#    SCORE_THRESH_TEST: 0.001
   ROI_BOX_HEAD:
     CLS_AGNOSTIC_BBOX_REG: True
 DATASETS:
   TRAIN: ('voc_2007_trainval', )
   TEST: ('voc_2007_test', )
 SOLVER:
-  STEPS: (22000, 24000)
-  MAX_ITER: 26000
+  STEPS: (32000, 34000)
+  MAX_ITER: 36000
   WARMUP_ITERS: 100
-OUTPUT_DIR: "./output/iOD/10_p_10"
+OUTPUT_DIR: "./output/iOD/10_p_10_test"
 OWOD:
   ENABLE_THRESHOLD_AUTOLABEL_UNK: True
   ENABLE_CLUSTERING: False
-  PREV_INTRODUCED_CLS: 10
-  CUR_INTRODUCED_CLS: 10
+  PREV_INTRODUCED_CLS: 15
+  CUR_INTRODUCED_CLS: 5
   CLUSTERING:
     START_ITER: 20000
     UPDATE_MU_ITER: 3100

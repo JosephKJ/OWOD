@@ -5,8 +5,6 @@ MODEL:
   ROI_HEADS:
     #    NUM_CLASSES: 21 # 0-19 Known class; 20 -> Unknown; 21 -> Background.
     NUM_CLASSES: 21
-    POSITIVE_FRACTION: 0.25
-    NMS_THRESH_TEST: 0.4
   ROI_BOX_HEAD:
     CLS_AGNOSTIC_BBOX_REG: True
 DATASETS:
