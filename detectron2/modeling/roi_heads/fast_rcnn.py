@@ -419,6 +419,7 @@ class FastRCNNOutputLayers(nn.Module):
         max_iterations,
         output_dir,
         feat_store_path,
+        margin,
         num_classes: int,
         test_score_thresh: float = 0.0,
         test_nms_thresh: float = 0.5,
@@ -500,7 +501,7 @@ class FastRCNNOutputLayers(nn.Module):
                                              self.feature_store_save_loc + '. Creating new feature store.')
             self.feature_store = Store(num_classes + 1, clustering_items_per_class)
         self.means = [None for _ in range(num_classes + 1)]
-
+        self.margin = margin
 
         # self.ae_model = AE(input_size, clustering_z_dimension)
         # self.ae_model.apply(Xavier)
@@ -530,6 +531,7 @@ class FastRCNNOutputLayers(nn.Module):
             "max_iterations"        : cfg.SOLVER.MAX_ITER,
             "output_dir"            : cfg.OUTPUT_DIR,
             "feat_store_path"       : cfg.OWOD.FEATURE_STORE_SAVE_PATH,
+            "margin"                : cfg.OWOD.CLUSTERING.MARGIN,
             # fmt: on
         }
 
@@ -595,7 +597,7 @@ class FastRCNNOutputLayers(nn.Module):
             if item == None:
                 all_means[i] = torch.zeros((length))
 
-        distances = torch.cdist(fg_features, torch.stack(all_means).cuda(), p=10.0)
+        distances = torch.cdist(fg_features, torch.stack(all_means).cuda(), p=self.margin)
         labels = []
 
         for index, feature in enumerate(fg_features):
