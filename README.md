@@ -2,8 +2,8 @@
 #### CVPR 2021
 
 Humans have a natural instinct to identify unknown object instances in their environments. The intrinsic curiosity about these unknown instances aids in learning about them, when the corresponding knowledge is eventually available. This motivates us to propose a novel computer vision problem called: Open World Object Detection, where a model is tasked to: 
-1) identify objects that have not been introduced to it as `unknown', without explicit supervision to do so, and 
-2) incrementally learn these identified unknown categories without forgetting previously learned classes, when the corresponding labels are progressively received. 
+1) Identify objects that have not been introduced to it as `unknown', without explicit supervision to do so, and 
+2) Incrementally learn these identified unknown categories without forgetting previously learned classes, when the corresponding labels are progressively received. 
 
 We formulate the problem, introduce a strong evaluation protocol and provide a novel solution, which we call ORE: Open World Object Detector, based on contrastive clustering and energy based unknown identification. Our experimental evaluation and ablation studies analyse the efficacy of ORE in achieving Open World objectives. As an interesting by-product, we find that identifying and characterising unknown instances helps to reduce confusion in an incremental object detection setting, where we achieve state-of-the-art performance, with no extra methodological effort. We hope that our work will attract further research into this newly identified, yet crucial research direction. 
    
