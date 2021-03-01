@@ -1,13 +1,13 @@
 _BASE_: "../../Base-RCNN-C4-OWOD.yaml"
 MODEL:
 #  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
-  WEIGHTS: "/home/fk1/workspace/OWOD/output/t1_std_faster_rcnn/model_final.pth"
+#  WEIGHTS: "/home/fk1/workspace/OWOD/output/margin_15/model_final.pth"
 #  WEIGHTS: "/home/fk1/workspace/OWOD/output/t1_only_thresh/model_final.pth"
-#  WEIGHTS: "/home/fk1/workspace/OWOD/output/t1_clustering_with_save/model_final.pth"
-  ROI_HEADS:
-    POSITIVE_FRACTION: 0.25
-    NMS_THRESH_TEST: 0.5
-    SCORE_THRESH_TEST: 0.05
+  WEIGHTS: "/home/joseph/workspace/OWOD/output/models_backup/t1_clustering_with_save/model_final.pth"
+#  ROI_HEADS:
+#    POSITIVE_FRACTION: 0.25
+#    NMS_THRESH_TEST: 0.5
+#    SCORE_THRESH_TEST: 0.05
 TEST:
   DETECTIONS_PER_IMAGE: 50
 DATASETS:
@@ -17,7 +17,7 @@ SOLVER:
   STEPS: (12000, 16000)
   MAX_ITER: 18000
   WARMUP_ITERS: 100
-OUTPUT_DIR: "./output/t1_test_rerun"
+OUTPUT_DIR: "./output/temp_3"
 OWOD:
   PREV_INTRODUCED_CLS: 0
   CUR_INTRODUCED_CLS: 20

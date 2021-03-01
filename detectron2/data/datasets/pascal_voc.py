@@ -45,7 +45,7 @@ VOC_CLASS_NAMES = [
 ]
 
 T2_CLASS_NAMES = [
-    "?", "traffic light", "fire hydrant", "stop sign", "parking meter",
+    "truck", "traffic light", "fire hydrant", "stop sign", "parking meter",
     "bench", "elephant", "bear", "zebra", "giraffe",
     "backpack", "umbrella", "handbag", "tie", "suitcase",
     "microwave", "oven", "toaster", "sink", "refrigerator"

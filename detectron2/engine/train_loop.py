@@ -178,11 +178,13 @@ class TrainerBase:
             for h in self._hooks:
                 h.after_train()
 
-    def analyse_energy(self):
+    def analyse_energy(self, temp=1.5):
         files = os.listdir(os.path.join(self.cfg.OUTPUT_DIR, self.cfg.OWOD.ENERGY_SAVE_PATH))
+        temp = self.cfg.OWOD.TEMPERATURE
+        logger = logging.getLogger(__name__)
+        logger.info('Temperature value: ' + str(temp))
         unk = []
         known = []
-        logger = logging.getLogger(__name__)
 
         for id, file in enumerate(files):
             path = os.path.join(self.cfg.OUTPUT_DIR, self.cfg.OWOD.ENERGY_SAVE_PATH, file)
@@ -192,7 +194,7 @@ class TrainerBase:
                 logger.info('Not able to load ' + path + ". Continuing...")
                 continue
             num_seen_classes = self.cfg.OWOD.PREV_INTRODUCED_CLS + self.cfg.OWOD.CUR_INTRODUCED_CLS
-            lse = torch.logsumexp(logits[:, :num_seen_classes], dim=1)
+            lse = temp * torch.logsumexp(logits[:, :num_seen_classes] / temp, dim=1)
             # lse = torch.logsumexp(logits[:, :-2], dim=1)
 
             for i, cls in enumerate(classes):
@@ -213,10 +215,17 @@ class TrainerBase:
 
         logger.info('Fitting Weibull distribution...')
         wb_dist_param = []
+
+        start_time = time.time()
         wb_unk = Fit_Weibull_3P(failures=unk, show_probability_plot=False, print_results=False)
+        logger.info("--- %s seconds ---" % (time.time() - start_time))
+
         wb_dist_param.append({"scale_unk": wb_unk.alpha, "shape_unk": wb_unk.beta, "shift_unk": wb_unk.gamma})
 
+        start_time = time.time()
         wb_known = Fit_Weibull_3P(failures=known, show_probability_plot=False, print_results=False)
+        logger.info("--- %s seconds ---" % (time.time() - start_time))
+
         wb_dist_param.append(
             {"scale_known": wb_known.alpha, "shape_known": wb_known.beta, "shift_known": wb_known.gamma})
 

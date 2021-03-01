@@ -92,4 +92,15 @@
 #python tools/train_net.py --num-gpus 8 --dist-url='tcp://127.0.0.1:52137' --resume --config-file ./configs/OWOD/t2/t2_ft_400.yaml SOLVER.IMS_PER_BATCH 8 SOLVER.BASE_LR 0.01
 
 
-python tools/train_net.py --num-gpus 8 --dist-url='tcp://127.0.0.1:52137' --resume --config-file ./configs/OWOD/t2/t2_ft_20.yaml SOLVER.IMS_PER_BATCH 8 SOLVER.BASE_LR 0.01
+#python tools/train_net.py --num-gpus 8 --dist-url='tcp://127.0.0.1:52137' --resume --config-file ./configs/OWOD/t2/t2_ft_20.yaml SOLVER.IMS_PER_BATCH 8 SOLVER.BASE_LR 0.01
+
+#
+#python tools/train_net.py --num-gpus 4 --dist-url='tcp://127.0.0.1:52133' --config-file ./configs/OWOD/t1/t1_val.yaml SOLVER.IMS_PER_BATCH 4 SOLVER.BASE_LR 0.01 OWOD.TEMPERATURE 2 OUTPUT_DIR "./output/temp_2"
+#
+#python tools/train_net.py --num-gpus 4 --eval-only --config-file ./configs/OWOD/t1/t1_test.yaml SOLVER.IMS_PER_BATCH 4 SOLVER.BASE_LR 0.005 OUTPUT_DIR "./output/temp_2"
+
+
+python tools/train_net.py --num-gpus 4 --dist-url='tcp://127.0.0.1:52133' --config-file ./configs/OWOD/t1/t1_val.yaml SOLVER.IMS_PER_BATCH 4 SOLVER.BASE_LR 0.01 OWOD.TEMPERATURE 1.5 OUTPUT_DIR "./output/temp_1p5"
+
+python tools/train_net.py --num-gpus 4 --eval-only --config-file ./configs/OWOD/t1/t1_test.yaml SOLVER.IMS_PER_BATCH 4 SOLVER.BASE_LR 0.005 OUTPUT_DIR "./output/temp_1p5"
+

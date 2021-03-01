@@ -1,6 +1,6 @@
 _BASE_: "../../Base-RCNN-C4-OWOD.yaml"
 MODEL:
-  WEIGHTS: "/home/fk1/workspace/OWOD/output/t1_clustering_with_save/model_final.pth"
+  WEIGHTS: "/home/joseph/workspace/OWOD/output/models_backup/t1_clustering_with_save/model_final.pth"
 DATASETS:
   TRAIN: ('voc_coco_2007_val', ) # t1_voc_coco_2007_train, t1_voc_coco_2007_ft
   TEST: ('voc_coco_2007_val', )   # voc_coco_2007_test
@@ -8,7 +8,7 @@ SOLVER:
   STEPS: (12000, 16000)
   MAX_ITER: 500
   WARMUP_ITERS: 0
-OUTPUT_DIR: "./output/t1_clustering_val"
+OUTPUT_DIR: "./output/temp_3"
 OWOD:
   PREV_INTRODUCED_CLS: 0
   CUR_INTRODUCED_CLS: 20
@@ -16,3 +16,4 @@ OWOD:
   ENERGY_SAVE_PATH: 'energy'
   SKIP_TRAINING_WHILE_EVAL: False
   ENABLE_CLUSTERING: False
+  TEMPERATURE: 1.5

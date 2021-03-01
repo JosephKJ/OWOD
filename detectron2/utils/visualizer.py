@@ -842,7 +842,7 @@ class Visualizer:
         )
         return self.output
 
-    def draw_box(self, box_coord, alpha=0.6, edge_color="g", line_style="-"):
+    def draw_box(self, box_coord, alpha=0.5, edge_color="g", line_style="-"):
         """
         Args:
             box_coord (tuple): a tuple containing x0, y0, x1, y1 coordinates, where x0 and y0
@@ -869,7 +869,7 @@ class Visualizer:
                 height,
                 fill=False,
                 edgecolor=edge_color,
-                linewidth=20,
+                linewidth=15,
                 alpha=alpha,
                 linestyle=line_style,
             )

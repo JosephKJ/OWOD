@@ -618,6 +618,8 @@ _C.OWOD.COMPUTE_ENERGY = False
 _C.OWOD.ENERGY_SAVE_PATH = ''
 _C.OWOD.SKIP_TRAINING_WHILE_EVAL = False
 _C.OWOD.FEATURE_STORE_SAVE_PATH = ''
+_C.OWOD.TEMPERATURE = 1.5
+
 
 # ---------------------------------------------------------------------------- #
 # Misc options
