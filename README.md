@@ -35,9 +35,11 @@ Our code base is build on top of [Detectron 2](https://github.com/facebookresear
 If you use our work in your research please cite us:
 
 ```BibTeX
-@misc{open_joseph,
-  author =       {K J Joseph and Salman Khan and Fahad Khan and Vineeth N Balasubramanian},
-  booktitle =    {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
-  year =         {2021}
+@inproceedings{joseph2021Towards,
+  title={Towards Open World Object Detection},
+  author={K J, Joseph and Salman, Khan and Fahad, Shahbaz Khan and Vineeth, N Balasubramanian},
+  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR 2021)},
+  code={https://github.com/JosephKJ/OWOD},
+  year={2021}
 }
 ```
