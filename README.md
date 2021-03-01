@@ -1,4 +1,4 @@
-### Towards Open World Object Detection
+## Towards Open World Object Detection
 #### CVPR 2021
 
 Humans have a natural instinct to identify unknown object instances in their environments. The intrinsic curiosity about these unknown instances aids in learning about them, when the corresponding knowledge is eventually available. This motivates us to propose a novel computer vision problem called: Open World Object Detection, where a model is tasked to: 
