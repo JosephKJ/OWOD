@@ -7,7 +7,7 @@
 
 
 <p align="center" width="80%">
-Our newly formulated Open World Object Detection setting is related to exisitng methods as above.
+The figure shows how our newly formulated Open World Object Detection setting relates to exsiting settings.
 </p>
 
 
