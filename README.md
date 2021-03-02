@@ -1,12 +1,33 @@
 ## Towards Open World Object Detection
-#### CVPR 2021
+### Accepted to CVPR 2021
+
+   
+#### Our newly formulated Open World Object Detection setting is related to exisitng methods as follows:
+
+<p align="center" width="100%">
+<img src="https://josephkj.in/assets/img/owod/the_problem.png" width="600" class="center"/>
+</p>
+
+#### Abstract
 
 Humans have a natural instinct to identify unknown object instances in their environments. The intrinsic curiosity about these unknown instances aids in learning about them, when the corresponding knowledge is eventually available. This motivates us to propose a novel computer vision problem called: Open World Object Detection, where a model is tasked to: 
 1) Identify objects that have not been introduced to it as `unknown', without explicit supervision to do so, and 
 2) Incrementally learn these identified unknown categories without forgetting previously learned classes, when the corresponding labels are progressively received. 
 
 We formulate the problem, introduce a strong evaluation protocol and provide a novel solution, which we call ORE: Open World Object Detector, based on contrastive clustering and energy based unknown identification. Our experimental evaluation and ablation studies analyse the efficacy of ORE in achieving Open World objectives. As an interesting by-product, we find that identifying and characterising unknown instances helps to reduce confusion in an incremental object detection setting, where we achieve state-of-the-art performance, with no extra methodological effort. We hope that our work will attract further research into this newly identified, yet crucial research direction. 
-   
+
+
+#### A sample qualitative result
+
+<p align="center" width="100%">
+<img src="https://josephkj.in/assets/img/owod/example.png" width="800" />
+</p>
+
+<p align="center" width="80%">
+The sub-figure (a) is the result produced by our method after learning a few set of classes which doesnot include classes like <strong>apple</strong> and <strong>orange</strong>. We are able to identify them and correctly labels them as <strong>unknown</strong>. 
+After some time, when the model is eventually taught to detect <strong>apple</strong> and <strong>orange</strong>, these instances are labelled correctly as seen in sub-figure (b); without forgetting how to detect <strong>person</strong>. 
+An unidentified class instance still remains, and is successfully detects it as <strong>unknown</strong>.
+</p>
 
 ## Installation
 
