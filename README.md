@@ -1,12 +1,15 @@
 ## Towards Open World Object Detection
 ### Accepted to CVPR 2021
 
-   
-#### Our newly formulated Open World Object Detection setting is related to exisitng methods as follows:
-
 <p align="center" width="100%">
-<img src="https://josephkj.in/assets/img/owod/the_problem.png" width="600" class="center"/>
+<img src="https://josephkj.in/assets/img/owod/the_problem.png" width="600"/>
 </p>
+
+
+<p align="center" width="80%">
+Our newly formulated Open World Object Detection setting is related to exisitng methods as above.
+</p>
+
 
 #### Abstract
 
