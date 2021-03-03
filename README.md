@@ -1,5 +1,5 @@
 ## Towards Open World Object Detection
-### Accepted to CVPR 2021
+### Accepted to CVPR 2021 as an ORAL paper
 
 <p align="center" width="100%">
 <img src="https://josephkj.in/assets/img/owod/the_problem.png" width="600"/>
