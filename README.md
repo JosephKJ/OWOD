@@ -1,5 +1,7 @@
-## Towards Open World Object Detection
+## [Towards Open World Object Detection](https://arxiv.org/abs/2103.02603)
 ### Accepted to CVPR 2021 as an ORAL paper
+#### arXiv: https://arxiv.org/abs/2103.02603
+
 
 <p align="center" width="100%">
 <img src="https://josephkj.in/assets/img/owod/the_problem.png" width="600"/>
