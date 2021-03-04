@@ -40,6 +40,8 @@ See [INSTALL.md](INSTALL.md).
 
 ## Quick Start
 
+Some bookkeeping needs to be done for the code, like removing the local paths and so on. We will update these shortly. 
+
 Data split and trained models: [Google Drive](https://drive.google.com/drive/folders/1Sr4_q0_m2f2SefoebB25Ix3N1VIAua0w?usp=sharing)
 
 All config files can be found in: `configs/OWOD`
