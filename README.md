@@ -31,7 +31,7 @@ We formulate the problem, introduce a strong evaluation protocol and provide a n
 <p align="center" width="80%">
 The sub-figure (a) is the result produced by our method after learning a few set of classes which doesnot include classes like <strong>apple</strong> and <strong>orange</strong>. We are able to identify them and correctly labels them as <strong>unknown</strong>. 
 After some time, when the model is eventually taught to detect <strong>apple</strong> and <strong>orange</strong>, these instances are labelled correctly as seen in sub-figure (b); without forgetting how to detect <strong>person</strong>. 
-An unidentified class instance still remains, and is successfully detects it as <strong>unknown</strong>.
+An unidentified class instance still remains, and is successfully detected as an <strong>unknown</strong>.
 </p>
 
 ## Installation
@@ -42,7 +42,7 @@ See [INSTALL.md](INSTALL.md).
 
 Some bookkeeping needs to be done for the code, like removing the local paths and so on. We will update these shortly. 
 
-Data split and trained models: [Google Drive](https://drive.google.com/drive/folders/1Sr4_q0_m2f2SefoebB25Ix3N1VIAua0w?usp=sharing)
+Data split and trained models: [[Google Drive Link 1]](https://drive.google.com/drive/folders/1Sr4_q0_m2f2SefoebB25Ix3N1VIAua0w?usp=sharing) [[Google Drive Link 2]](https://drive.google.com/drive/folders/11bJRdZqdtzIxBDkxrx2Jc3AhirqkO0YV?usp=sharing)
 
 All config files can be found in: `configs/OWOD`
 
