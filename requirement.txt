@@ -8,9 +8,9 @@ cloudpickle==1.6.0
 cycler==0.10.0
 Cython==0.29.23
 dataclasses==0.8
--e git+https://github.com/JosephKJ/OWOD.git@68bcee285d5a74510ad6331474c9a37447b35e18#egg=detectron2
+-e git+https://github.com/JosephKJ/OWOD.git@f7b20ad41c9f5bd3e5b5e82d7f90b8f670a57df9#egg=detectron2
 future==0.18.2
-fvcore==0.1.5.post20210423
+fvcore==0.1.1.dev200512
 google-auth==1.30.0
 google-auth-oauthlib==0.4.4
 grpcio==1.37.1
