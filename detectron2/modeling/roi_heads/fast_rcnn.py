@@ -632,6 +632,15 @@ class FastRCNNOutputLayers(nn.Module):
             # Freeze the parameters when clustering starts
             # for param in self.ae_model.parameters():
             #     param.requires_grad = False
+        elif storage.iter > self.clustering_start_iter and self.means.count(None) == len(self.means):
+            items = self.feature_store.retrieve(-1)
+            for index, item in enumerate(items):
+                if len(item) == 0:
+                    self.means[index] = None
+                else:
+                    mu = torch.tensor(item).mean(dim=0)
+                    self.means[index] = mu
+            c_loss = self.clstr_loss_l2_cdist(input_features, proposals)
         elif storage.iter > self.clustering_start_iter:
             if storage.iter % self.clustering_update_mu_iter == 0:
                 # Compute new MUs
