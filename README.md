@@ -1,6 +1,5 @@
-## [Towards Open World Object Detection](https://arxiv.org/abs/2103.02603)
-### Accepted to CVPR 2021 as an ORAL paper
-#### arXiv: https://arxiv.org/abs/2103.02603
+## Towards Open World Object Detection [[arXiv](https://arxiv.org/abs/2103.02603) | [video](https://www.youtube.com/watch?v=aB2ZFAR-OZg)]
+### Presented at CVPR 2021 as an ORAL paper
 
 
 <p align="center" width="100%">
