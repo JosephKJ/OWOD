@@ -1,4 +1,4 @@
-## Towards Open World Object Detection [[arXiv](https://arxiv.org/abs/2103.02603) | [video](https://www.youtube.com/watch?v=aB2ZFAR-OZg)]
+## Towards Open World Object Detection [[arXiv](https://arxiv.org/abs/2103.02603) | [video](https://www.youtube.com/watch?v=aB2ZFAR-OZg) | [poster](https://github.com/JosephKJ/OWOD/blob/master/ORE_poster.pdf)]
 ### Presented at CVPR 2021 as an ORAL paper
 
 
