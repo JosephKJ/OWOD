@@ -57,7 +57,7 @@ Kindly run `replicate.sh` to replicate results from the models shared on the Goo
 Kindly check `run.sh` file for a task workflow.
 
 ## Incremental Object Detection
-If you are interested in Incremental Object Detection, you may have to consider [this](https://github.com/JosephKJ/iOD) recent work. We have released the exact training configurations, trained models and logs for all three settings: https://github.com/JosephKJ/iOD 
+If you are interested in Incremental Object Detection, you may have to consider [this](https://github.com/JosephKJ/iOD) recent work. We have released the exact training configurations, trained models and logs for all three incremental settings: https://github.com/JosephKJ/iOD 
 
 ## Acknowledgement
 
