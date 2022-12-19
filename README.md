@@ -43,7 +43,7 @@ Dataset setup: Follow [these](https://github.com/JosephKJ/OWOD/issues/59#issueco
 
 Some bookkeeping needs to be done for the code, like removing the local paths and so on. We will update these shortly. 
 
-Data split and trained models: [[Google Drive Link 1]](https://drive.google.com/drive/folders/1Sr4_q0_m2f2SefoebB25Ix3N1VIAua0w?usp=sharing) [[Google Drive Link 2]](https://drive.google.com/drive/folders/11bJRdZqdtzIxBDkxrx2Jc3AhirqkO0YV?usp=sharing)
+Data split and trained models: [[Google Drive Link]](https://drive.google.com/drive/folders/1S5L-YmIiFMAKTs6nHMorB0Osz5iWI31k?usp=sharing) 
 
 All config files can be found in: `configs/OWOD`
 
